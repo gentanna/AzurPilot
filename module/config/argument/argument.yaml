@@ -708,11 +708,14 @@ GemsFarming:
   AllowHighFlagshipLevel: false
   AllowLowVanguardLevel: false
   DelayTaskIFNoFlagship: false
-  CommissionLimit: false
+  CommissionLimit:
+    value: do_not_use
+    option: [do_not_use, legacy, advanced]
   HighValueCommissionFilterCount:
     type: input
     value: 32
   HighValueCommissionReserve: 2
+  HighValueCommissionAverageRefreshTime: 20
   VanguardLevelMin:
     value: 1
     validate: [1, 125]
