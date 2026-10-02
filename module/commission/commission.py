@@ -1691,13 +1691,29 @@ class RewardCommission(UI, InfoHandler):
             logger.info('[委托-战术] 检测到战术课堂开始按钮，点击取消退出')
             self.device.click(TACTICAL_CLASS_CANCEL)
             self.device.sleep((0.5, 1.0))
-        self.ui_ensure(page_reward)
-        self.commission_receive()
 
-        # 在启航仪式委托获得舰船时会出现信息栏
-        # 这是游戏 bug，信息栏反复显示获得舰船，直到点击 get_ship 才消失
-        self.handle_info_bar()
-        self.commission_start()
+        # 兜底机制，确保没有空闲委托槽     
+        for i in range(7):
+            self.ui_ensure(page_reward)            
+            if self.commission_receive():   
+                j = 0
+            elif i == 0:
+                j = 1
+            else:
+                j += 1
+            self.handle_info_bar()
+            self.commission_start()
+            if not self.daily_choose and not self.urgent_choose:
+                break 
+            elif i < 6:             
+                if j > 0:
+                    logger.warning('存在空闲委托槽')
+                if j < 2:
+                    continue                         
+            logger.warning('委托系统出错')            
+            self.config.task_call(task='Restart')
+            self.config.task_stop()
+            break
 
         # 调度
         total = self.daily.add_by_eq(self.urgent)
