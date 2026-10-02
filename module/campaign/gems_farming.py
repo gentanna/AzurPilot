@@ -475,7 +475,7 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
                 min_level = max_level
             if self.hard_mode:
                 min_level = max(min_level, 70)
-        emotion_lower_bound = 0 if emotion == 0 else self.emotion_lower_bound
+        emotion_lower_bound = emotion
         scanner = ShipScanner(level=(min_level, max_level), emotion=(emotion_lower_bound, 150),
                               fleet=[0, self.fleet_to_attack], status='free')
         scanner.disable('rarity')
@@ -582,12 +582,13 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
         if not self.dock_enter(self.fleet_enter_flagship):
             raise RequestHumanTakeover('进入换船船坞超时，无法确认舰队状态')
 
-        ship = self.get_common_rarity_cv()
-        if ship:
-            self.flagship_change_with_emotion(ship)
-            logger.info('[战役-紧急委托] 更换旗舰成功')
-            return True
-        else:
+        for _ in range(2):
+            ship = self.get_common_rarity_cv(lv=25, emotion=70)
+            if ship:
+                self.flagship_change_with_emotion(ship)
+                logger.info('[战役-紧急委托] 更换旗舰成功')
+                return True
+        if not ship:
             logger.info('[战役-紧急委托] 更换旗舰失败，没有普通稀有度航母。')
 
             if self.config.SERVER in ['cn']:
@@ -631,12 +632,13 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
         if not self.dock_enter(self.fleet_enter):
             raise RequestHumanTakeover('进入换船船坞超时，无法确认舰队状态')
 
-        ship = self.get_common_rarity_dd()
-        if ship:
-            self.vanguard_change_with_emotion(ship)
-            logger.info('[战役-紧急委托] 更换先锋舰船成功')
-            return True
-        else:
+        for _ in range(2):
+            ship = self.get_common_rarity_dd(emotion= 3 * self.emotion_lower_bound)
+            if ship:
+                self.vanguard_change_with_emotion(ship)
+                logger.info('[战役-紧急委托] 更换先锋舰船成功')
+                return True
+        if not ship:
             logger.info('[战役-紧急委托] 更换先锋舰船失败，没有普通稀有度驱逐舰。')
             ship = self.get_common_rarity_dd(emotion=0)
             if ship and self.hard_mode:
