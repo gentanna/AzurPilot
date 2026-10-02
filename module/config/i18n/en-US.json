@@ -2013,7 +2013,10 @@
     },
     "CommissionLimit": {
       "name": "Prevent too many urgent commissions",
-      "help": "When enabled, commission scheduling reserves high-value commissions according to the following settings and delays urgent-commission farming when the reserve threshold is reached."
+      "help": "In simple mode, urgent-commission farming are delayed when high-value commissions reach the reserve threshold; in advanced mode, the execution time of urgent-commission farming is intelligently set based on commissions completion time, high-value commissions gaps, and the average refresh time of high-value commissions.",
+      "do_not_use": "Not used",
+      "legacy": "Simple",
+      "advanced": "Advanced"
     },
     "HighValueCommissionFilterCount": {
       "name": "High-value commission filter count",
@@ -2022,6 +2025,10 @@
     "HighValueCommissionReserve": {
       "name": "High-value commission reserve",
       "help": "After starting commissions, delay urgent-commission farming when the number of pending commissions matching high-value rules reaches this value."
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "Average refresh time for High-value commissions (minutes)",
+      "help": "The average time for an urgent commission to refresh a high-value urgent commission."
     },
     "VanguardLevelMin": {
       "name": "Vanguard minimum level",

@@ -1655,29 +1655,48 @@ class RewardCommission(UI, InfoHandler):
         limit_tasks = [
             task for task in ['GemsFarming', 'ThreeOilLowCost']
             if self.config.is_task_enabled(task)
-            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False)
+            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False) != "do_not_use"
         ]
 
-        if limit_tasks:
-            future = nearest_future(future_finish) if len(future_finish) else None
+        if limit_tasks and len(future_finish):
+            future = nearest_future(future_finish)
+            future_e = future
             for task in limit_tasks:
                 filter_count = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionFilterCount')
-                reserve = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionReserve')
                 filter_count = max(int(filter_count), 1)
-                reserve = max(int(reserve), 1)
                 high_value_count = self._commission_high_value_count(filter_count)
-                if high_value_count >= reserve:
-                    logger.info(
-                        f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{reserve}，"
-                        f"延迟任务 '{task}'"
-                    )
-                    self.config.task_delay(
-                        minute=None if future else 120,
-                        target=future,
-                        task=task,
-                    )
+                if self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False) == "legacy":
+                    reserve = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionReserve')                
+                    reserve = max(int(reserve), 1)                
+                    if high_value_count >= reserve:                        
+                        logger.info(
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{reserve}，"
+                            f"延迟任务 '{task}'"
+                        )
+                        self.config.task_delay(target=future_e, task=task)
+                    else:
+                        logger.info(
+                            f"[委托-调度] 高价值委托未达到保留量 {high_value_count}/{reserve}，"
+                            f"继续任务 '{task}'"
+                        )
+                elif high_value_count < len(future_finish):
+                    refresh_time = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionAverageRefreshTime')
+                    refresh_time = max(refresh_time, 1)
+                    schedule = [2.995727542, 4.743864548, 6.295793512, 7.753656141, 9.153519117]
+                    future_excution = []
+                    for i in range(len(future_finish)):
+                        if i - high_value_count >= 0:
+                            future_excution.append(future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time))                          
+                    logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
+                    future_excution.sort()
+                    future_e = nearest_future(future_excution)
+                    self.config.task_delay(target=future_e,task=task)
                 else:
                     logger.info(
-                        f"[委托-调度] 高价值委托未达到保留量 {high_value_count}/{reserve}，"
-                        f"继续任务 '{task}'"
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish)}，"
+                            f"延迟任务 '{task}'"
                     )
+                    self.config.task_delay(target=future_e, task=task)
+
+
+
