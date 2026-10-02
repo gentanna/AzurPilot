@@ -2759,8 +2759,13 @@
         "value": false
       },
       "CommissionLimit": {
-        "type": "checkbox",
-        "value": false
+        "type": "select",
+        "value": "do_not_use",
+        "option": [
+          "do_not_use",
+          "legacy",
+          "advanced"
+        ]
       },
       "HighValueCommissionFilterCount": {
         "type": "input",
@@ -2769,6 +2774,10 @@
       "HighValueCommissionReserve": {
         "type": "input",
         "value": 2
+      },
+      "HighValueCommissionAverageRefreshTime": {
+        "type": "input",
+        "value": 20
       },
       "VanguardLevelMin": {
         "type": "input",
@@ -3339,8 +3348,13 @@
         "value": false
       },
       "CommissionLimit": {
-        "type": "checkbox",
-        "value": false
+        "type": "select",
+        "value": "do_not_use",
+        "option": [
+          "do_not_use",
+          "legacy",
+          "advanced"
+        ]
       },
       "HighValueCommissionFilterCount": {
         "type": "input",
@@ -3349,6 +3363,10 @@
       "HighValueCommissionReserve": {
         "type": "input",
         "value": 2
+      },
+      "HighValueCommissionAverageRefreshTime": {
+        "type": "input",
+        "value": 20
       },
       "VanguardLevelMin": {
         "type": "input",
@@ -3920,8 +3938,13 @@
         "value": false
       },
       "CommissionLimit": {
-        "type": "checkbox",
-        "value": false
+        "type": "select",
+        "value": "do_not_use",
+        "option": [
+          "do_not_use",
+          "legacy",
+          "advanced"
+        ]
       },
       "HighValueCommissionFilterCount": {
         "type": "input",
@@ -3930,6 +3953,10 @@
       "HighValueCommissionReserve": {
         "type": "input",
         "value": 2
+      },
+      "HighValueCommissionAverageRefreshTime": {
+        "type": "input",
+        "value": 20
       },
       "VanguardLevelMin": {
         "type": "input",
