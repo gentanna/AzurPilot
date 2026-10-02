@@ -2525,7 +2525,8 @@ class RewardCommission(Dock, UI, InfoHandler):
         future_finish = sorted([f for f in total.get('finish_time') if f is not None])
         logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')
         if len(future_finish):
-            self.config.task_delay(target=future_finish)
+            future = nearest_future(future_finish)
+            self.config.task_delay(target=future)
         else:
             logger.info('[委托-完成] 没有正在运行的委托')
             self.config.task_delay(success=False)
@@ -2535,29 +2536,44 @@ class RewardCommission(Dock, UI, InfoHandler):
         limit_tasks = [
             task for task in ['GemsFarming', 'ThreeOilLowCost']
             if self.config.is_task_enabled(task)
-            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False)
+            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit',default='do_not_use') != 'do_not_use'
         ]
 
-        if limit_tasks:
-            future = nearest_future(future_finish) if len(future_finish) else None
+        if len(future_finish) and limit_tasks:            
             for task in limit_tasks:
                 filter_count = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionFilterCount')
-                reserve = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionReserve')
                 filter_count = max(int(filter_count), 1)
-                reserve = max(int(reserve), 1)
                 high_value_count = self._commission_high_value_count(filter_count)
-                if high_value_count >= reserve:
-                    logger.info(
-                        f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{reserve}，"
-                        f"延迟任务 '{task}'"
-                    )
-                    self.config.task_delay(
-                        minute=None if future else 120,
-                        target=future,
-                        task=task,
-                    )
+                if self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit') == 'legacy':
+                    reserve = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionReserve')                
+                    reserve = max(int(reserve), 1)                
+                    if high_value_count >= reserve:                        
+                        logger.info(
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{reserve}，"
+                            f"延迟任务 '{task}'"
+                        )
+                        self.config.task_delay(target=future, task=task)
+                    else:
+                        logger.info(
+                            f"[委托-调度] 高价值委托未达到保留量 {high_value_count}/{reserve}，"
+                            f"继续任务 '{task}'"
+                        )
                 else:
-                    logger.info(
-                        f"[委托-调度] 高价值委托未达到保留量 {high_value_count}/{reserve}，"
-                        f"继续任务 '{task}'"
-                    )
+                    refresh_time = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionAverageRefreshTime')
+                    refresh_time = max(refresh_time, 1)
+                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16]
+                    future_excution = []
+                    for i in range(len(future_finish)):
+                        if i - high_value_count >= 0:
+                            future_excution.append(future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time))
+                    if len(future_excution):
+                        logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
+                    else:
+                        logger.info(
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish)}，"
+                            f"延迟任务 '{task}'"
+                        )
+                    future_excution.append(future)
+                    future_excution.sort()
+                    future_e = future_excution[0]
+                    self.config.task_delay(target=future_e, task=task)
