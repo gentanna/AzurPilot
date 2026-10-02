@@ -194,24 +194,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         ) or 22
         overflow_target_task = self._get_prevent_action_point_overflow_target_task()
 
-        if self.config.task.command == "OpsiExploreCleanup":
-            logger.info("独立事件补扫任务，跳过初始化自律寻敌")
-        elif (
-            (
-                self.config.task.command == "OpsiScheduling"
-                and self.is_smart_scheduling_enabled()
-            )
-            or overflow_target_task == "OpsiScheduling"
-        ):
-            logger.info("智能调度将决定初始化自律寻敌是否执行")
-            self._smart_scheduling_first_auto_search_pending = True
-        elif (
-            self.zone.zone_id == leveling_zone
-            and (
-                self.config.task.command == "OpsiHazard1Leveling"
-                or overflow_target_task == "OpsiHazard1Leveling"
-            )
-        ):
+        if self.zone.zone_id == leveling_zone:
             pass
         else:
             self.run_first_auto_search()
