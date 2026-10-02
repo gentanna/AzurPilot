@@ -510,7 +510,7 @@ class Commission:
     def __eq__(self, other):
         """判断两个委托是否为同一委托。
 
-        通过类型、状态、后缀、时长（允许 120 秒误差）、截止时间和重复次数
+        通过类型、状态、后缀、时长（允许 2 秒误差）、截止时间和重复次数
         进行综合比较。紧急物资委托还需匹配阵营标签（NYB/BIW）。
 
         Args:
@@ -521,7 +521,7 @@ class Commission:
         """
         if not isinstance(other, Commission):
             return False
-        threshold = timedelta(seconds=120)
+        threshold = timedelta(seconds=2)
         if not self.valid or not other.valid:
             return False
         if self.genre != other.genre or self.status != other.status:
