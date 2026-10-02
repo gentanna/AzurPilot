@@ -1707,6 +1707,9 @@ class RewardCommission(UI, InfoHandler):
                     future_excution.sort()
                     future_e = nearest_future(future_excution)
                     self.config.task_delay(target=future_e,task=task)
+                    if (future - max(future_e, current_time()) > timedelta(minutes=2 * refresh_time)):
+                        logger.info("间隔时间过长，提前任务 'commission'")                       
+                        self.config.task_delay(target=max(future_e, current_time()) + min(timedelta(minutes=1.5 * refresh_time), (future - future_e)/2))
                 else:
                     logger.info(
                             f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish)}，"
