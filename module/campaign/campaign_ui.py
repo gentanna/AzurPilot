@@ -157,7 +157,7 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
             # 切换章节
             if retry.reached():
                 button = CHAPTER_NEXT if diff > 0 else CHAPTER_PREV
-                self.device.multi_click(button, n=abs(diff), interval=(0.2, 0.3))
+                self.device.multi_click(button, n=min(abs(diff), 30), interval=(0.2, 0.3))
                 retry.reset()
 
     def handle_chapter_additional(self):
