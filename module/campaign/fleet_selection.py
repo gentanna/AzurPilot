@@ -162,8 +162,10 @@ class FleetSelectionMixin:
                 self._ship_detail_enter(button)
                 self.clear_all_equip()
                 self._fleet_back()
-
-            success = getattr(self, f'{position}_change_execute')()
+            
+            self.device.screenshot_interval_set(3 * self.config.Optimization_ScreenshotInterval)
+            success = getattr(self, f'{position}_change_execute')() 
+            self.device.screenshot_interval_set()                      
 
             # 未找到替代舰船时也要恢复留在队伍里的舰船装备。
             if change_equip:
@@ -211,7 +213,7 @@ class FleetSelectionMixin:
         else:
             max_level = lv
             min_level = 1
-        emotion_lower_bound = 0 if emotion == 0 else self.emotion_lower_bound
+        emotion_lower_bound = emotion
         fleet = [0, self.fleet_to_attack] if self.config.GemsFarming_AllowHighFlagshipLevel else self.fleet_to_attack
 
         if self.config.GemsFarming_UseEmotionFirst:
