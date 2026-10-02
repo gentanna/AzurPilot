@@ -769,7 +769,7 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
                 flagship_success = True
                 if self.change_vanguard:
                     vanguard_success = self.vanguard_change()
-                if self.change_flagship and (vanguard_success or self._trigger_lv32):
+                if self.change_flagship and vanguard_success:
                     flagship_success = self.flagship_change()
                     # 未找到替换舰船时，下次调度仍需检查；本次是否继续由推迟任务开关决定。
                     if not self.config.GemsFarming_AllowHighFlagshipLevel:
