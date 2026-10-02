@@ -2029,7 +2029,10 @@
     },
     "CommissionLimit": {
       "name": "防止緊急委託數量過多",
-      "help": "啟用後，委託排程會根據以下兩項設定保留高價值委託；達到保留量時延後刷緊急委託任務。"
+      "help": "簡單模式在高價值委託達到保留量時延後刷緊急委託任務/n高級模式依據委託完成時間、高價值委託缺口和高價值緊急委託平均刷新時間智能設置緊急委託任務執行時間。",
+      "do_not_use": "不使用",
+      "legacy": "簡單模式",
+      "advanced": "高級模式"
     },
     "HighValueCommissionFilterCount": {
       "name": "高價值委託過濾器數量",
@@ -2038,6 +2041,10 @@
     "HighValueCommissionReserve": {
       "name": "高價值委託保留量",
       "help": "委託執行後，若仍待執行且符合高價值規則的委託數量達到此值，則延後刷緊急委託任務。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高價值委託平均刷新時間（分鐘）",
+      "help": "緊急委託任務刷新一個高價值緊急委託的平均時間。"
     },
     "VanguardLevelMin": {
       "name": "前排最低等級",
