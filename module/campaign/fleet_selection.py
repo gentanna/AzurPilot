@@ -211,7 +211,7 @@ class FleetSelectionMixin:
         else:
             max_level = lv
             min_level = 1
-        emotion_lower_bound = 0 if emotion == 0 else self.emotion_lower_bound
+        emotion_lower_bound = emotion
         fleet = [0, self.fleet_to_attack] if self.config.GemsFarming_AllowHighFlagshipLevel else self.fleet_to_attack
 
         if self.config.GemsFarming_UseEmotionFirst:
