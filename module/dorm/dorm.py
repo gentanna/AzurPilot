@@ -747,5 +747,5 @@ class RewardDorm(UI):
         # Scheduler
         ships = self.get_dorm_ship_amount()
         delay = self.cal_dorm_delay(ships)
-        logger.info(f'[宿舍-调度] 宿舍舰船数: {ships}, 任务延迟: {delay}')
-        self.config.task_delay(minute=delay)
+        logger.info(f'[宿舍-调度] 宿舍舰船数: {ships}, 任务延迟: {delay / 2}')
+        self.config.task_delay(minute=delay / 2)
