@@ -2029,7 +2029,10 @@
     },
     "CommissionLimit": {
       "name": "防止高价值委托数量过多",
-      "help": "启用后，委托调度会根据以下两项配置保留高价值委托；达到保留量时延后刷紧急委托任务。"
+      "help": "简单模式在高价值委托达到保留量时延后刷紧急委托任务/n高级模式依据委托完成时间、高价值委托缺口和高价值紧急委托平均刷新时间智能设置紧急委托任务执行时间。",
+      "do_not_use": "不使用",
+      "legacy": "简单模式",
+      "advanced": "高级模式"
     },
     "HighValueCommissionFilterCount": {
       "name": "高价值委托过滤器数量",
@@ -2038,6 +2041,10 @@
     "HighValueCommissionReserve": {
       "name": "高价值委托保留量",
       "help": "委托执行后，若仍待执行且匹配高价值规则的委托数量达到此值，则延后刷紧急委托任务。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高价值委托平均刷新时间（分钟）",
+      "help": "紧急委托任务刷新一个高价值紧急委托的平均时间。"
     },
     "VanguardLevelMin": {
       "name": "前排最低等级",
