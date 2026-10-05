@@ -2720,6 +2720,40 @@
       "use_fleet": "用艦隊中的船"
     }
   },
+  "Maintenace": {
+    "_info": {
+      "name": "維護",
+      "help": ""
+    },
+    "MaintenaceStart": {
+      "name": "維護開始時間",
+      "help": ""
+    },
+    "MaintenaceEnd": {
+      "name": "維護結束時間",
+      "help": ""
+    },
+    "SwitchFilter": {
+      "name": "維護前切換過濾器",
+      "help": ""
+    },
+    "MaintenaceFilter": {
+      "name": "維護委託過濾器",
+      "help": ""
+    },
+    "HighValueCommissionFilterCount": {
+      "name": "高價值委託過濾器數量",
+      "help": "將目前委託過濾器由前往後的前 X 條普通規則視為高價值規則。tier 和 shortest 等控制標記不計入數量。"
+    },
+    "HighValueCommissionReserve": {
+      "name": "高價值委託保留量",
+      "help": "委託執行後，若仍待執行且符合高價值規則的委託數量達到此值，則延後刷緊急委託任務。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高價值委託平均刷新時間（分鐘）",
+      "help": "緊急委託任務刷新一個高價值緊急委託的平均時間。"
+    }
+  },  
   "Tactical": {
     "_info": {
       "name": "戰術學院",

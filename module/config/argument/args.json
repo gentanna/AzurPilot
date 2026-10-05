@@ -12013,7 +12013,7 @@
       "HighValueCommissionAverageRefreshTime": {
         "type": "input",
         "value": 20
-      },
+      },      
       "Blacklist": {
         "type": "textarea",
         "value": ""
@@ -12084,6 +12084,38 @@
           "skip",
           "use_fleet"
         ]
+      }
+    },
+    "Maintenace": {
+      "MaintenaceStart": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "MaintenaceEnd": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "SwitchFilter": {
+        "type": "checkbox",
+        "value": false
+      },
+      "MaintenaceFilter": {
+        "type": "textarea",
+        "value": ""
+      },
+      "HighValueCommissionFilterCount": {
+        "type": "input",
+        "value": 32
+      },
+      "HighValueCommissionReserve": {
+        "type": "input",
+        "value": 2
+      },
+      "HighValueCommissionAverageRefreshTime": {
+        "type": "input",
+        "value": 20
       }
     },
     "Storage": {

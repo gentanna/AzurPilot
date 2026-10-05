@@ -1088,7 +1088,7 @@ Commission:
     value: 0.6
   FilterValueHalfLife:
     type: input
-    value: 4.0
+    value: 4.0  
   CustomFilter: |-
     DailyEvent > Gem-4 > Gem-2 > Gem-8 > ExtraCube-0:30
     > UrgentCube-1:30 > UrgentCube-1:45 > UrgentCube-3
@@ -1110,7 +1110,7 @@ Commission:
     type: input
     value: 32
   HighValueCommissionReserve: 2
-  HighValueCommissionAverageRefreshTime: 20
+  HighValueCommissionAverageRefreshTime: 20  
   Blacklist:
     type: textarea
     value: ""
@@ -1144,6 +1144,20 @@ Commission:
   NoFreeShipPolicy:
     value: skip
     option: [ skip, use_fleet ]
+Maintenace:
+  MaintenaceStart: 2020-01-01 00:00:00
+  MaintenaceEnd: 2020-01-01 00:00:00
+  SwitchFilter:
+    type: checkbox
+    value: false    
+  MaintenaceFilter:
+    type: textarea
+    value: ""
+  HighValueCommissionFilterCount:
+    type: input
+    value: 32
+  HighValueCommissionReserve: 2
+  HighValueCommissionAverageRefreshTime: 20  
 Tactical:
   TacticalFilter: |-
     SameT4 > SameT3 > SameT2 > SameT1
