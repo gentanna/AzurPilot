@@ -544,36 +544,59 @@ class RewardCommission(Dock, UI, InfoHandler):
                     for filter_index, comm in tier
                 ))
 
+            maintain_start_time = self.config.Commission_MaintainStart            
+            maintain_end_time = self.config.Commission_MaintainEnd                   
             plan_time = current_time()
+            maintain_start = int((maintain_start_time - plan_time).total_seconds())
+            maintain_end = int((maintain_end_time - plan_time).total_seconds())
             server_update = getattr(self.config, 'Scheduler_ServerUpdate', '00:00')
             horizon_time = get_server_next_update(server_update)
             horizon = int((horizon_time - plan_time).total_seconds())
             if horizon <= 0:
                 horizon = 24 * 60 * 60
                 horizon_time = plan_time + timedelta(seconds=horizon)
+            if maintain_start >= maintain_end or maintain_start + 600 <= 0 or maintain_start - 120 >= horizon:
+                maintain_end = 0
 
             jobs = []
-            source_index = 0
+            source_index = 0            
             for tier_index, tier in enumerate(tiers):
-                for filter_index, comm in tier:
+                for filter_index, comm in tier:                                        
+                    duration_time = getattr(comm, 'duration', None)
+                    duration = max(int(duration_time.total_seconds()), 1)
+
                     # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
-                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻。
+                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻。                    
                     deadline_time = getattr(comm, 'deadline_time', None) or horizon_time
                     deadline = int((deadline_time - plan_time).total_seconds())
                     if deadline <= 0:
                         logger.info(f'[委托-规划] 忽略已过期委托: {comm}')
                         continue
+                    # 在维护前，对于维护时段内截止的委托，如其时长超过 3 小时，
+                    # 则将其截止时间改为维护结束时间再减 10 分钟，否则将其截止时间改为维护开始时间再加 10 分钟
+                    if maintain_end and maintain_start - 120 <= deadline < maintain_end:
+                        if duration >= 10800:
+                            deadline = maintain_end - 600
+                        else:
+                            deadline = maintain_start + 600                    
+
                     jobs.append(CommissionPlanJob(
                         source_index=source_index,
                         tier=tier_index,
-                        duration=max(int(comm.duration.total_seconds()), 1),
+                        duration=duration,
                         deadline=deadline,
                         commission=comm,
                         filter_index=filter_index,
                     ))
                     source_index += 1
 
-            slot_available = [max(int(comm.duration.total_seconds()), 0) for comm in running_list]
+            slot_available = []
+            for comm in running_list:
+                available = max(int(comm.duration.total_seconds()), 0) 
+                if maintain_end:                    
+                    if maintain_start - 120 <= available < maintain_end:
+                        available = maintain_end
+                slot_available.append(available)
             slot_available.extend([0] * max(self.max_commission - running_count, 0))
             try:
                 value_model = CommissionValueModel.from_config(self.config)
@@ -592,7 +615,9 @@ class RewardCommission(Dock, UI, InfoHandler):
                 jobs,
                 slot_available,
                 horizon,
-                model=value_model,
+                maintain_start,
+                maintain_end,
+                model=value_model,                
             )
             self._commission_plan_log(
                 plan=plan,
@@ -600,6 +625,8 @@ class RewardCommission(Dock, UI, InfoHandler):
                 running=running_list,
                 plan_time=plan_time,
                 horizon_time=horizon_time,
+                maintain_start_time=maintain_start_time,
+                maintain_end_time=maintain_end_time,
             )
 
             start_now = SelectedGrids([
@@ -624,7 +651,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         return daily_choose, urgent_choose
 
     @staticmethod
-    def _commission_plan_log(plan, jobs, running, plan_time, horizon_time):
+    def _commission_plan_log(plan, jobs, running, plan_time, horizon_time, maintain_start_time, maintain_end_time):
         """详细输出最优策略的价值、取舍和全部事件时间节点。"""
         score = ', '.join(f'T{index + 1}={value}' for index, value in enumerate(plan.score))
         utility = plan.utility / plan.value_scale
@@ -648,6 +675,11 @@ class RewardCommission(Dock, UI, InfoHandler):
                 f'最大可能差距 {gap:.6f} T1'
             )
         logger.info(f'[委托-规划] 规划边界: {horizon_time:%Y-%m-%d %H:%M:%S}')
+        if (maintain_start_time < maintain_end_time 
+            and maintain_start_time + timedelta(minutes=10) > plan_time 
+            and maintain_start_time - timedelta(minutes=2) < horizon_time
+            ):
+            logger.info(f'[委托-规划] 维护时间: {maintain_start_time:%Y-%m-%d %H:%M:%S}-{maintain_end_time:%Y-%m-%d %H:%M:%S}')
         logger.info('[委托-规划] 比较规则: 折现总价值 > 未折现总价值 > 最晚结束时间 > 完成时间总和 > 稳定编号')
 
         events = {0: []}
