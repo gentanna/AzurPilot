@@ -258,8 +258,10 @@ def optimize_commission_plan(
     jobs,
     slot_available,
     horizon,
+    maintain_start,
+    maintain_end,
     model=DEFAULT_VALUE_MODEL,
-    beam_width=None,
+    beam_width=None,    
 ):
     """返回多项式束搜索的最佳计划、最优性证书与稳定委托列表。
 
@@ -267,8 +269,10 @@ def optimize_commission_plan(
         jobs (Iterable[CommissionPlanJob]): 候选委托作业列表。
         slot_available (Iterable[int]): 各舰队槽位可用的时间（相对规划时刻的秒数）。
         horizon (int): 规划总时间视界（秒）。
+        maintain_start (int): 维护开始时间视界（秒）。
+        maintain_end (int): 维护结束时间视界（秒）。
         model (CommissionValueModel): 委托价值模型参数。
-        beam_width (int, optional): 束搜索保留状态上限，默认按规模自适应计算。
+        beam_width (int, optional): 束搜索保留状态上限，默认按规模自适应计算。        
 
     Returns:
         tuple[CommissionPlan, list[CommissionPlanJob]]: 规划结果与作业列表。
@@ -279,8 +283,19 @@ def optimize_commission_plan(
     jobs = list(jobs)
     job_count = len(jobs)
     tier_count = max((job.tier for job in jobs), default=-1) + 1
-    empty_score = (0,) * tier_count
+    empty_score = (0,) * tier_count    
     slots = tuple(sorted(max(int(value), 0) for value in slot_available))
+    # 在有充足的能在维护前完成的委托时，忽视无法在维护前完成的委托的等待损失：其折现因子恒为 VALUE_SCALE。
+    if maintain_end:
+        comm_duration = sorted([job.duration for job in jobs])
+        if comm_duration[max(0, len([slot for slot in slots if slot == 0]) - 1)] < maintain_start - 120:
+            no_delay_penalty = tuple(
+                job.duration > maintain_start - 120 for job in jobs
+            )
+        else:
+            no_delay_penalty = tuple(False for _ in jobs)
+    else:
+        no_delay_penalty = tuple(False for _ in jobs)
     horizon = max(int(horizon), 0)
     if beam_width is None:
         # 小规模实例优先保留 n² 个状态；n >= 16 后严格按 16n 线性增长。
@@ -345,6 +360,13 @@ def optimize_commission_plan(
         """在单次规划内缓存定点折现，避免跨规划持有模型实例。"""
         return model.delay_factor(start, deadline)
 
+    def effective_finish(finish):
+        """委托的实际完成时刻（跳过维护窗口）。"""
+        if maintain_end:
+            if maintain_start - 120 <= finish < maintain_end:
+                return maintain_end
+        return finish
+
     def optimistic_rank(state):
         """返回任意后续计划完整比较键的逐项严格乐观上界。"""
         current = state.result
@@ -357,9 +379,12 @@ def optimize_commission_plan(
             for index in branch_order:
                 if not state.mask & (1 << index) or start >= limits[index]:
                     continue
-                future_utility += (
-                    base_values[index] * delay_factor(start, jobs[index].deadline)
-                )
+                if no_delay_penalty[index]:
+                    future_utility += full_values[index]
+                else:
+                    future_utility += (
+                        base_values[index] * delay_factor(start, jobs[index].deadline)
+                    )
                 future_full_value += full_values[index]
         return (
             current.utility + future_utility,
@@ -408,8 +433,11 @@ def optimize_commission_plan(
                 job = jobs[job_index]
                 # 必须使用委托自己的原始 deadline。limits 还包含服务器刷新边界，
                 # 后者只限制搜索范围，不应成为紧急委托的价值惩罚来源。
-                factor = delay_factor(start, job.deadline)
-                finish = start + job.duration
+                if no_delay_penalty[job_index]:
+                    factor = VALUE_SCALE
+                else:
+                    factor = delay_factor(start, job.deadline)
+                finish = effective_finish(finish=start + job.duration)
                 next_slots = tuple(sorted((*state.slots[1:], finish)))
                 action = CommissionPlanAction(job_index, start, finish)
                 next_result = _StateResult(
