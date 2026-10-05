@@ -2292,6 +2292,14 @@
       "name": "In-tier index half-life",
       "help": "Number of filter rules required for the in-tier adjustment to move halfway toward its floor; must be positive and may use one decimal place. Lower values concentrate more value in early rules."
     },
+    "MaintainStart": {
+      "name": "Maintenance Start Time",
+      "help": ""
+    },
+    "MaintainEnd": {
+      "name": "Maintenance End Time",
+      "help": ""
+    },
     "CustomFilter": {
       "name": "Custom commission filter",
       "help": "Set Commission Filter to Customize to use this filter. With experimental dynamic programming enabled, tier separates value levels; without tier, every rule becomes its own level. The planner discounts finite tier and in-tier values by expected start delay and may drop low-value commissions. The traditional greedy strategy ignores tier; shortest fills unmatched slots."
