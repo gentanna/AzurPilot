@@ -2720,6 +2720,40 @@
       "use_fleet": "艦隊の艦船を使用"
     }
   },
+  "Maintenace": {
+    "_info": {
+      "name": "メンテナンス",
+      "help": ""
+    },
+    "MaintenaceStart": {
+      "name": "メンテナンス開始時間",
+      "help": ""
+    },
+    "MaintenaceEnd": {
+      "name": "メンテナンス終了時間",
+      "help": ""
+    },
+    "SwitchFilter": {
+      "name": "メンテナンス前にフィルターを切り替える,",
+      "help": ""
+    },
+    "MaintenaceFilter": {
+      "name": "メンテナンス委託フィルター",
+      "help": ""
+    },
+    "HighValueCommissionFilterCount": {
+      "name": "高価値委託フィルター数",
+      "help": "現在の委託フィルターの先頭から X 件の通常ルールを高価値ルールとして扱います。tier や shortest などの制御記号は数に含めません。"
+    },
+    "HighValueCommissionReserve": {
+      "name": "高価値委託の確保数",
+      "help": "委託開始後、高価値ルールに一致する未開始委託数がこの値以上の場合、緊急委託周回タスクを延期します。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高価値の委託の平均リフレッシュ時間（分）",
+      "help": "緊急委託ミッションが高価値緊急委託に更新される平均時間。"
+    }
+  },  
   "Tactical": {
     "_info": {
       "name": "戦術教室",

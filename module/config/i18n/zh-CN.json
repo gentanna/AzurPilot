@@ -2720,6 +2720,40 @@
       "use_fleet": "用舰队中的船"
     }
   },
+  "Maintenace": {
+    "_info": {
+      "name": "维护",
+      "help": ""
+    },
+    "MaintenaceStart": {
+      "name": "维护开始时间",
+      "help": ""
+    },
+    "MaintenaceEnd": {
+      "name": "维护结束时间",
+      "help": ""
+    },
+    "SwitchFilter": {
+      "name": "维护前切换过滤器",
+      "help": ""
+    },
+    "MaintenaceFilter": {
+      "name": "维护委托过滤器",
+      "help": ""
+    },
+    "HighValueCommissionFilterCount": {
+      "name": "高价值委托过滤器数量",
+      "help": "将当前委托过滤器从前往后的前 X 条普通规则视为高价值规则。tier 和 shortest 等控制标记不计入数量。"
+    },
+    "HighValueCommissionReserve": {
+      "name": "高价值委托保留量",
+      "help": "委托执行后，若仍待执行且匹配高价值规则的委托数量达到此值，则延后刷紧急委托任务。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高价值委托平均刷新时间（分钟）",
+      "help": "紧急委托任务刷新一个高价值紧急委托的平均时间。"
+    }
+  },  
   "Tactical": {
     "_info": {
       "name": "战术学院",
