@@ -359,6 +359,9 @@ class RewardCommission(UI, InfoHandler):
                     for filter_index, comm in tier
                 ))
 
+            # 维护开始时间加两分钟的冗余
+            maintain_start_time = self.config.Commission_MaintainStart - timedelta(minutes=2)
+            maintain_end_time = self.config.Commission_MaintainEnd
             plan_time = current_time()
             server_update = getattr(self.config, 'Scheduler_ServerUpdate', '00:00')
             horizon_time = get_server_next_update(server_update)
@@ -368,27 +371,56 @@ class RewardCommission(UI, InfoHandler):
                 horizon_time = plan_time + timedelta(seconds=horizon)
 
             jobs = []
-            source_index = 0
+            source_index = 0            
             for tier_index, tier in enumerate(tiers):
-                for filter_index, comm in tier:
+                for filter_index, comm in tier:                                        
+                    duration_time = getattr(comm, 'duration', None)
+                    # 在维护前，将维护时段内完成的委托的执行时长改为维护结束时间-当前时间
+                    if (plan_time <= maintain_start_time + timedelta(minutes=10)
+                        and duration_time + plan_time > maintain_start_time 
+                        and duration_time + plan_time  <= maintain_end_time
+                        ):
+                        duration_time = maintain_end_time - plan_time + timedelta(minutes=1)
+                    duration = max(int(duration_time.total_seconds()), 1)
+
                     # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
-                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻。
+                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻。                    
                     deadline_time = getattr(comm, 'deadline_time', None) or horizon_time
+                    # 在维护前，对于维护时段内截止的委托，如其时长超过3小时或无法在维护前完成，
+                    # 则将其截止时间改为维护结束时间，否则将其截止时间改为维护开始时间再加10分钟
+                    if (plan_time <= maintain_start_time + timedelta(minutes=10)
+                        and deadline_time > maintain_start_time 
+                        and deadline_time <= maintain_end_time
+                        ):
+                        if duration_time >= timedelta(hours=3) or duration_time >= maintain_start_time - plan_time:
+                            deadline_time = maintain_end_time
+                        else:
+                            deadline_time = maintain_start_time + timedelta(minutes=10)
                     deadline = int((deadline_time - plan_time).total_seconds())
                     if deadline <= 0:
                         logger.info(f'[委托-规划] 忽略已过期委托: {comm}')
                         continue
+
                     jobs.append(CommissionPlanJob(
                         source_index=source_index,
                         tier=tier_index,
-                        duration=max(int(comm.duration.total_seconds()), 1),
+                        duration=duration,
                         deadline=deadline,
                         commission=comm,
                         filter_index=filter_index,
                     ))
                     source_index += 1
 
-            slot_available = [max(int(comm.duration.total_seconds()), 0) for comm in running_list]
+            slot_available = []            
+            for comm in running_list:
+                duration = getattr(comm, 'duration', None)
+                # 在维护前，将维护时段内完成的委托的执行时长改为维护结束时间-当前时间
+                if (plan_time <= maintain_start_time + timedelta(minutes=10)
+                    and duration + plan_time > maintain_start_time 
+                    and duration + plan_time  <= maintain_end_time
+                    ):
+                    duration = maintain_end_time - plan_time + timedelta(minutes=1)
+                slot_available.append(max(int(duration.total_seconds()), 0))  
             slot_available.extend([0] * max(self.max_commission - running_count, 0))
             try:
                 value_model = CommissionValueModel.from_config(self.config)
