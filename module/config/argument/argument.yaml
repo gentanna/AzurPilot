@@ -827,6 +827,8 @@ Commission:
   FilterValueHalfLife:
     type: input
     value: 4.0
+  MaintainStart: 2020-01-01 00:00:00
+  MaintainEnd: 2020-01-01 00:00:00
   CustomFilter: |-
     DailyEvent > Gem-4 > Gem-2 > Gem-8 > ExtraCube-0:30
     > UrgentCube-1:30 > UrgentCube-1:45 > UrgentCube-3
