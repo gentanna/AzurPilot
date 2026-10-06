@@ -1666,6 +1666,15 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 self.clear_question(drop=drop)
             if rescan:
                 self.map_rescan(rescan_mode=rescan, drop=drop)
+                if on_map_scanned is None and self.config.OpsiGeneral_ExecuteFixedPatrolScan:
+                    from module.os.tasks.smart_explore import smart_explore_enabled
+                    if (not self.zone.is_port
+                        and (self.is_zone_name_hidden 
+                        or self.is_in_opsi_explore() 
+                        or smart_explore_enabled(self.config))
+                        ):
+                        self.clear_question_any_fleet(drop=drop)
+                        self.fleet_set(self.config.OpsiFleet_Fleet)
 
             if on_map_scanned is not None:
                 on_map_scanned(drop=drop)
