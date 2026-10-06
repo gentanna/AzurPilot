@@ -210,7 +210,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         )
 
         fresh_ap = self._prepare_scheduling_action_point(
-            fresh_ap, cost=120, avoid_ap_overflow=True,
+            fresh_ap, cost=80, avoid_ap_overflow=True,
         )
 
         # 已完成事件、EMP/修理后确认的同一海域不再重复 OCR；其他入口仍实时定位。
@@ -225,11 +225,11 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             raise
 
         # 侵蚀 1 练级时，行动力优先用于此任务，而非耄耋相接。
-        # 防溢出：当前行动力 100-119 时直接开工不开启行动力箱；
-        # 低于 100 时开箱后达到或超过 200 满值的箱子不开启。
+        # 防溢出：当前行动力高于 80 时直接开工不开启行动力箱；
+        # 低于 80 时开箱后达到或超过 200 满值的箱子不开启。
         # 智能调度代跑时决策读刚读过行动力：达到开工线时弹窗只会
-        # 读数再关掉，复用它跳过；不足 100 时仍需弹窗开箱/购买。
-        if self.action_point_reusable(fresh_ap, cost=120, avoid_ap_overflow=True):
+        # 读数再关掉，复用它跳过；不足 80 时仍需弹窗开箱/购买。
+        if self.action_point_reusable(fresh_ap, cost=80, avoid_ap_overflow=True):
             _fresh_total, _fresh_current = fresh_ap
             logger.debug(
                 f'[大世界-侵蚀1练级] 复用刚读到的行动力'
@@ -237,7 +237,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             )
         else:
             self.action_point_set(
-                cost=120, keep_current_ap=True, check_rest_ap=True,
+                cost=80, keep_current_ap=True, check_rest_ap=True,
                 avoid_ap_overflow=True, routine=True,
             )
 
