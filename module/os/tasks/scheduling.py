@@ -143,7 +143,7 @@ class CoinTaskMixin:
         Args:
             fresh_ap (tuple[int, int] | None): 本轮首读的总行动力和当前行动力。
             cost (int): 子任务开工检查所需行动力。
-            avoid_ap_overflow (bool): 是否按侵蚀1的 100 开工线处理。
+            avoid_ap_overflow (bool): 是否按侵蚀1的 80 开工线处理。
 
         Returns:
             tuple[int, int] | None: 补充后的实际读数或未保留面板时的传入读数。
@@ -1036,7 +1036,7 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
         self._close_scheduling_action_point()
         if allow_cached:
             cached = self.action_point_cached_read()
-            if cached is not None and cached[1] >= 100 and cached[0] > self._get_effective_cl1_ap_preserve():
+            if cached is not None and cached[1] >= 80 and cached[0] > self._get_effective_cl1_ap_preserve():
                 return cached
         self.action_point_enter()
         self.action_point_safe_get()
