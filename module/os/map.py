@@ -1065,7 +1065,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     and self.config.task_switched()
                 ):
                     if self.config.task.command == "OpsiMeowfficerFarming":
-                        logger.info("[大世界-搜索] 短时指挥喵搜索运行中，延迟任务切换直到搜索完成")
+                        self.interrupt_auto_search(goto_main=False, drop=drop)
                     else:
                         self.interrupt_auto_search(drop=drop)
                 if interrupt_confirm:
