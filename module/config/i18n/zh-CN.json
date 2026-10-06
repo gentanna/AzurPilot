@@ -3898,6 +3898,10 @@
       "name": "完成地图随机事件",
       "help": "在自律寻敌完成后重新扫描一遍地图，购买明石商店，使用塞壬信息收集装置、使用塞壬探测装置、解锁两舰队机关"
     },
+    "ExecuteFixedPatrolScan": {
+      "name": "雷达扫描",
+      "help": "开启后，战后切换 1~4 号舰队扫描雷达并处理剩余问号，不移动舰队。默认关闭；关闭时只检查当前舰队。"
+    },
     "AkashiShopFilter": {
       "name": "商店过滤器",
       "help": "默认只购买体力：ActionPoint。如果要购买紫币：PurpleCoins，都买设置为 'ActionPoint > PurpleCoins'"
