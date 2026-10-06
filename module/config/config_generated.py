@@ -638,6 +638,7 @@ class GeneratedConfig:
     OpsiGeneral_RepairPackThreshold = 0.9
     OpsiGeneral_RepairPackThresholdHazard1 = 0.5
     OpsiGeneral_DoRandomMapEvent = True
+    OpsiGeneral_ExecuteFixedPatrolScan = False
     OpsiGeneral_AkashiShopFilter = 'ActionPoint'
     OpsiGeneral_DebugClipRetentionDays = 7
     OpsiGeneral_NotifyOpsiMail = True
