@@ -277,15 +277,15 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
             fresh_ap = None
 
         # 智能调度代跑时决策读刚读过行动力：达到开工线时弹窗只会
-        # 读数再关掉，复用它跳过；不足 120 时仍需弹窗开箱/购买。
-        if self.action_point_reusable(fresh_ap, cost=120):
+        # 读数再关掉，复用它跳过；不足 80 时仍需弹窗开箱/购买。
+        if self.action_point_reusable(fresh_ap, cost=80):
             _fresh_total, _fresh_current = fresh_ap
             logger.info(
                 f'[大世界-耄耋相接] 复用刚读到的行动力'
                 f'(当前={_fresh_current}, 总={_fresh_total})，跳过行动点弹窗'
             )
         else:
-            self.action_point_set(cost=120, keep_current_ap=True, check_rest_ap=True)
+            self.action_point_set(cost=80, keep_current_ap=True, check_rest_ap=True)
         self.fleet_set(self.config.OpsiFleet_Fleet)
         self.os_order_execute(recon_scan=False, submarine_call=self.config.OpsiFleet_Submarine)
 
@@ -525,7 +525,7 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
                     and getattr(getattr(self, 'zone', None), 'zone_id', None) == target_zones[0].zone_id \
                     and self.is_zone_name_hidden:
                 # 已在单个指定安全海域时，首读面板可直接完成本轮开工补充。
-                fresh_ap = self._prepare_scheduling_action_point(fresh_ap, cost=120)
+                fresh_ap = self._prepare_scheduling_action_point(fresh_ap, cost=80)
             else:
                 # 换图、多海域或传统模式先关闭面板，沿各自的进入海域流程补充。
                 self._close_scheduling_action_point()

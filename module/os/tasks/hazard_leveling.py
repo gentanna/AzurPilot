@@ -190,7 +190,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         )
 
         fresh_ap = self._prepare_scheduling_action_point(
-            fresh_ap, cost=120, avoid_ap_overflow=True,
+            fresh_ap, cost=80, avoid_ap_overflow=True,
         )
 
         # 获取当前区域
@@ -206,7 +206,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         # 低于 100 时开箱后达到或超过 200 满值的箱子不开启。
         # 智能调度代跑时决策读刚读过行动力：达到开工线时弹窗只会
         # 读数再关掉，复用它跳过；不足 100 时仍需弹窗开箱/购买。
-        if self.action_point_reusable(fresh_ap, cost=120, avoid_ap_overflow=True):
+        if self.action_point_reusable(fresh_ap, cost=80, avoid_ap_overflow=True):
             _fresh_total, _fresh_current = fresh_ap
             logger.info(
                 f'[大世界-侵蚀1练级] 复用刚读到的行动力'
@@ -214,7 +214,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             )
         else:
             self.action_point_set(
-                cost=120, keep_current_ap=True, check_rest_ap=True,
+                cost=80, keep_current_ap=True, check_rest_ap=True,
                 avoid_ap_overflow=True,
             )
 
