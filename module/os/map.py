@@ -1583,7 +1583,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self.clear_question(drop=drop)
             if rescan:
                 self.map_rescan(rescan_mode=rescan, drop=drop)
-
+                if self.config.OpsiGeneral_ExecuteFixedPatrolScan:
+                    self.clear_question_any_fleet()
+                    self.fleet_set(self.config.OpsiFleet_Fleet)
             if exit_map:
                 self.map_exit(drop=drop)
 

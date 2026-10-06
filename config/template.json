@@ -2616,6 +2616,7 @@
       "RepairPackThreshold": 0.9,
       "RepairPackThresholdHazard1": 0.5,
       "DoRandomMapEvent": true,
+      "ExecuteFixedPatrolScan": false,
       "AkashiShopFilter": "ActionPoint",
       "DebugClipRetentionDays": 7,
       "NotifyOpsiMail": true,
