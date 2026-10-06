@@ -3444,6 +3444,10 @@
       "name": "Complete random map events",
       "help": "After completing Auto-Search, scan the map again to purchase from Akashi Shop, use Siren information collection device, use Siren detection device, and unlock two-fleet mechanisms."
     },
+    "ExecuteFixedPatrolScan": {
+      "name": "Post-battle forced movement (efficiency mode)",
+      "help": "When enabled, after each battle ALAS cycles through fleets 1-4 and checks each radar for remaining question marks (switching fleets only, moving none), and handles Akashi / logging tower / Siren device if found."
+    },
     "AkashiShopFilter": {
       "name": "Shop filter",
       "help": "By default, only Action Points are purchased. If you want to buy purple coins, set to 'ActionPoint > PurpleCoins'"

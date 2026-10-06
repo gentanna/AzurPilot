@@ -1241,6 +1241,7 @@ OpsiGeneral:
   RepairPackThreshold: 0.9
   RepairPackThresholdHazard1: 0.5
   DoRandomMapEvent: true
+  ExecuteFixedPatrolScan: false
   AkashiShopFilter: |-
     ActionPoint
   # 战后 debug 录像保留天数：log/clips/ 下超过该天数的录像会被自动清理，
