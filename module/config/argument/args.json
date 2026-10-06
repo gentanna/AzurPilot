@@ -14755,6 +14755,10 @@
         "type": "checkbox",
         "value": true
       },
+      "ExecuteFixedPatrolScan": {
+        "type": "checkbox",
+        "value": false
+      },
       "AkashiShopFilter": {
         "type": "textarea",
         "value": "ActionPoint"
