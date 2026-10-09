@@ -15,6 +15,7 @@ import copy
 import importlib
 import os
 import random
+from datetime import datetime, timedelta
 
 from module.campaign.campaign_base import CampaignBase
 from module.campaign.campaign_event import CampaignEvent
@@ -22,6 +23,7 @@ from module.campaign.stage_name import normalize_event_stage, normalize_post_loo
 from module.shop.shop_status import ShopStatus
 from module.campaign.campaign_ui import MODE_SWITCH_1
 from module.config.config import AzurLaneConfig
+from module.config.time_source import now as current_time
 from module.exception import CampaignEnd, RequestHumanTakeover, ScriptEnd
 from module.handler.fast_forward import map_files, to_map_file_name
 from module.logger import logger
@@ -182,6 +184,13 @@ class CampaignRun(CampaignEvent, ShopStatus):
                 logger.hr('触发停止条件: 物资上限')
                 self.handle_task_balancer()
                 return True
+        # 维护限制
+        if ((self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) - current_time()) < timedelta(minutes=12)
+            and self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) > current_time()
+            ):
+            logger.hr('触发延迟条件: 维护即将到来')
+            self.config.task_delay(target=self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False))
+            self.config.task_stop()
 
         return False
 
