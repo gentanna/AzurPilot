@@ -2660,7 +2660,6 @@ class RewardCommission(Dock, UI, InfoHandler):
         # 调度
         logger.hr('调度委托', level=1) 
         logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')           
-        self.config.task_delay(target=future)
 
         # 延迟钻石 farming / 三油低耗任务
         # 遍历使用 GemsFarming 配置组的任务，检查是否启用且开启了 CommissionLimit
@@ -2708,6 +2707,17 @@ class RewardCommission(Dock, UI, InfoHandler):
                     future_excution.sort()
                     future_e = future_excution[0]
                     self.config.task_delay(target=future_e, task=task)
+                    # 提前委托任务以防止紧急委托刷新过多         
+                    future_e = max(future_e, plan_time)                               
+                    if future_e.time().hour < 21 and future > future_e.replace(hour=21, minute=0, second=0) + timedelta(minutes=refresh_time):
+                        logger.info("[委托-调度] 夜间委托即将刷新，提前任务 'commission'")
+                        future = future_e.replace(hour=21, minute=0, second=0)
+                    elif future - future_e > timedelta(minutes=2 * refresh_time):
+                        logger.info("[委托-调度] 间隔时间过长，提前任务 'commission'")                      
+                        future = (future_e + min(timedelta(minutes=1.5 * refresh_time), (future - future_e) / 2)).replace(second=0)
+        
+        # 延后委托
+        self.config.task_delay(target=future)
 
         # 延后出击、活动、META作战、演习、大世界开荒和大世界每日。
         self.config.get_next_task()
