@@ -1759,14 +1759,26 @@ class RewardCommission(UI, InfoHandler):
                     plan_time = current_time()
                     schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44]
                     future_excution = []
+                    # 计算委托刷新边界
+                    # 维护开始时间加两分钟的冗余   
+                    maintain_start_time = self.config.Commission_MaintainStart - timedelta(minutes=2) 
+                    if (plan_time.date() == maintain_start_time.date()) and (plan_time < maintain_start_time):
+                        refresh_horizon_time = maintain_start_time
+                    else:
+                        server_update = getattr(self.config, 'Scheduler_ServerUpdate', '00:00')
+                        refresh_horizon_time = get_server_next_update(server_update)
+                        refresh_horizon_time = refresh_horizon_time if refresh_horizon_time > plan_time else plan_time + timedelta(days=1)
+    
                     for i in range(len(future_finish)):
-                        if i - high_value_count >= 0:
-                            future_excution.append(future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time))
+                        if future_finish[i] < refresh_horizon_time:
+                            if i - high_value_count >= 0:
+                                future_excution.append(future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time))
+                    extra_count = -len([f for f in future_finish if f > refresh_horizon_time])
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
                         logger.info(
-                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish)}，"
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish) + extra_count}，"
                             f"延迟任务 '{task}'"
                         )
                     future_excution.append(future)
