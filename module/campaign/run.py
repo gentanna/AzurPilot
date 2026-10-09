@@ -200,6 +200,15 @@ class CampaignRun(CampaignEvent, ShopStatus):
             logger.hr('触发延迟条件: 维护即将到来')
             self.config.task_delay(target=self.config.cross_get(keys='Commission.Commission.MaintainEnd', default=False))
             self.config.task_stop()
+        # 委托限制
+        if ((self.config.task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
+             and self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False) - current_time() < timedelta(minutes=10)) 
+            or (self.config.task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
+                and self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False) - current_time() < timedelta(minutes=5))
+            ):
+            logger.hr('触发延迟条件: 委托即将到来')
+            self.config.task_delay(target=self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False))
+            self.config.task_stop()
 
         return False
 

@@ -2702,3 +2702,14 @@ class RewardCommission(Dock, UI, InfoHandler):
                     future_excution.sort()
                     future_e = future_excution[0] if future - future_excution[0] >= timedelta(minutes=5) else future
                     self.config.task_delay(target=future_e, task=task)
+
+        # 延迟其他任务
+        self.config.get_next_task()
+        for task in (self.config.pending_task + self.config.waiting_task):
+            if (((task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
+                  and future - self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False) < timedelta(minutes=10)) 
+                 or (task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
+                     and future - self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False) < timedelta(minutes=5)))
+                 and future > self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False)
+                ):
+                self.config.task_delay(target=future, task=task.command)
