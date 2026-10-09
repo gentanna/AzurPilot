@@ -1756,6 +1756,7 @@ class RewardCommission(UI, InfoHandler):
                 else:
                     refresh_time = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionAverageRefreshTime')
                     refresh_time = max(refresh_time, 1)
+                    plan_time = current_time()
                     schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44]
                     future_excution = []
                     for i in range(len(future_finish)):
@@ -1772,6 +1773,10 @@ class RewardCommission(UI, InfoHandler):
                     future_excution.sort()
                     future_e = nearest_future(future_excution)
                     self.config.task_delay(target=future_e, task=task)
+                    # 提前委托任务以防止紧急委托刷新过多
+                    if (future - max(future_e, plan_time) > timedelta(minutes=2 * refresh_time)):
+                        logger.info("间隔时间过长，提前任务 'commission'")                       
+                        self.config.task_delay(target=max(future_e, plan_time) + min(timedelta(minutes=1.5 * refresh_time), (future - future_e) / 2))
 
 
 
