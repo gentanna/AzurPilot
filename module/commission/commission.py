@@ -2693,7 +2693,10 @@ class RewardCommission(Dock, UI, InfoHandler):
                     for i in range(len(future_finish)):
                         if plan_time > maintain_start_time or future_finish[i] < maintain_start_time:
                             if i - high_value_count >= 0:
-                                future_excution.append(future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time))              
+                                future_t = future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time - 20)
+                                if future_t.date() == future_finish[i].date():
+                                    future_t += timedelta(minutes=20)
+                                future_excution.append(future_t)
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
