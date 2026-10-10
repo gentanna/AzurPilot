@@ -2684,11 +2684,12 @@ class RewardCommission(Dock, UI, InfoHandler):
                 else:
                     refresh_time = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionAverageRefreshTime')
                     refresh_time = max(refresh_time, 1)
-                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16]
+                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44]
                     future_excution = []
                     # 计算委托刷新边界
-                    # 维护开始时间加两分钟的冗余   
-                    maintain_start_time = self.config.Commission_MaintainStart - timedelta(minutes=2) 
+                    # 维护开始时间与维护结束时间各加两分钟的冗余
+                    maintain_start_time = self.config.Commission_MaintainStart - timedelta(minutes=2)
+                    maintain_end_time = self.config.Commission_MaintainEnd + timedelta(minutes=2)
                     if (plan_time.date() == maintain_start_time.date()) and (plan_time < maintain_start_time):
                         refresh_horizon_time = maintain_start_time
                     else:
@@ -2696,16 +2697,30 @@ class RewardCommission(Dock, UI, InfoHandler):
                         refresh_horizon_time = get_server_next_update(server_update)
                         refresh_horizon_time = refresh_horizon_time if refresh_horizon_time > plan_time else plan_time + timedelta(days=1)
     
-                    for i in range(len(future_finish)):
-                        if future_finish[i] < refresh_horizon_time:
-                            if i - high_value_count >= 0:
+                    # 维护前额外增加4个高价值委托需求量,维护或规划跨日不生效
+                    if maintain_start_time.date() == maintain_end_time.date() and refresh_horizon_time == maintain_start_time:
+                        extra_count = 4 
+                    else:
+                        extra_count = 0
+
+                    for i in range(len(future_finish)):                        
+                        if (future_finish[i] < refresh_horizon_time 
+                            or (maintain_start_time.date() == maintain_end_time.date()
+                                and plan_time.date() == maintain_start_time.date() - timedelta(days=1))
+                            ):
+                            if i - high_value_count + extra_count >= 0:
                                 # 跨日额外加20分钟提前量
-                                future_t = future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time) - timedelta(minutes=20)
+                                future_t = future_finish[i] - schedule[i - high_value_count + extra_count] * timedelta(minutes=refresh_time) - timedelta(minutes=20)
                                 if future_t.date() == future_finish[i].date():
                                     future_t += timedelta(minutes=20)
-                                future_excution.append(future_t)
-
-                    extra_count = -len([f for f in future_finish if f >= refresh_horizon_time])
+                                future_excution.append(future_t)        
+                                
+                    extra_count = -len([f for f in future_finish if f >= refresh_horizon_time]) 
+                    if maintain_start_time.date() == maintain_end_time.date():
+                        if plan_time.date() == maintain_start_time.date() - timedelta(days=1):
+                            extra_count = 0  
+                        elif refresh_horizon_time == maintain_start_time:
+                            extra_count += 4 
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
