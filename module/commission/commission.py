@@ -364,11 +364,12 @@ class RewardCommission(UI, InfoHandler):
             maintain_end_time = self.config.Commission_MaintainEnd + timedelta(minutes=30)
             plan_time = current_time()
             server_update = getattr(self.config, 'Scheduler_ServerUpdate', '00:00')
-            horizon_time = get_server_next_update(server_update)
+            daily_refresh_time = get_server_next_update(server_update)
+            daily_refresh_time = daily_refresh_time if daily_refresh_time > plan_time else plan_time + timedelta(days=1)
+            horizon_time = plan_time + timedelta(hours=6)
+            if (horizon_time.date() == maintain_start_time.date()) and (horizon_time > maintain_start_time):
+                horizon_time += (maintain_end_time- maintain_start_time)
             horizon = int((horizon_time - plan_time).total_seconds())
-            if horizon <= 0:
-                horizon = 24 * 60 * 60
-                horizon_time = plan_time + timedelta(seconds=horizon)
 
             jobs = []
             source_index = 0            
@@ -384,10 +385,10 @@ class RewardCommission(UI, InfoHandler):
                     # 没有显式倒计时，此时使用本轮实际服务器刷新时刻，不能在服务器刷新前完成的再加12个小时。                    
                     if getattr(comm, 'deadline_time', None) is not None:
                         deadline_time = getattr(comm, 'deadline_time', None)
-                    elif duration_time + plan_time <= horizon_time - timedelta(minutes=2):
-                        deadline_time = horizon_time
+                    elif duration_time + plan_time <= daily_refresh_time - timedelta(minutes=2):
+                        deadline_time = daily_refresh_time
                     else:
-                        deadline_time = horizon_time + timedelta(hours=12)
+                        deadline_time = daily_refresh_time + timedelta(hours=12)
                     # 将维护时段内截止的委托的截止时间改为维护结束时间再减两分钟
                     if (deadline_time > maintain_start_time) and (deadline_time <= maintain_end_time):
                         deadline_time = maintain_end_time  - timedelta(minutes=2)
