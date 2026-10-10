@@ -569,8 +569,13 @@ class RewardCommission(Dock, UI, InfoHandler):
                     duration = max(int(duration_time.total_seconds()), 1)
 
                     # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
-                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻。                    
-                    deadline_time = getattr(comm, 'deadline_time', None) or horizon_time
+                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻，不能在服务器刷新前完成的再加 12 个小时。                    
+                    if getattr(comm, 'deadline_time', None) is not None:
+                        deadline_time = getattr(comm, 'deadline_time', None)
+                    elif duration_time + plan_time <= horizon_time - timedelta(minutes=2):
+                        deadline_time = horizon_time
+                    else:
+                        deadline_time = horizon_time + timedelta(hours=12)
                     # 在维护前，对于维护时段内截止的委托，如其时长超过 3 小时或无法在维护前完成，
                     # 则将其截止时间改为维护结束时间，否则将其截止时间改为维护开始时间再加 20 分钟
                     if (plan_time <= maintain_start_time + timedelta(minutes=10)
