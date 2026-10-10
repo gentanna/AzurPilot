@@ -359,9 +359,9 @@ class RewardCommission(UI, InfoHandler):
                     for filter_index, comm in tier
                 ))
 
-            # 维护开始时间加两分钟的冗余
+            # 维护开始时间加两分钟的冗余,维护结束时间加半小时的冗余
             maintain_start_time = self.config.Commission_MaintainStart - timedelta(minutes=2)
-            maintain_end_time = self.config.Commission_MaintainEnd
+            maintain_end_time = self.config.Commission_MaintainEnd + timedelta(minutes=30)
             plan_time = current_time()
             server_update = getattr(self.config, 'Scheduler_ServerUpdate', '00:00')
             horizon_time = get_server_next_update(server_update)
