@@ -1772,7 +1772,11 @@ class RewardCommission(UI, InfoHandler):
                     for i in range(len(future_finish)):
                         if future_finish[i] < refresh_horizon_time:
                             if i - high_value_count >= 0:
-                                future_excution.append(future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time))
+                                # 跨日额外加20分钟提前量
+                                future_t = future_finish[i] - schedule[i - high_value_count] * timedelta(minutes=refresh_time) - timedelta(minutes=20)
+                                if future_t.date() == future_finish[i].date():
+                                    future_t += timedelta(minutes=20)
+                                future_excution.append(future_t)
                     extra_count = -len([f for f in future_finish if f > refresh_horizon_time])
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
