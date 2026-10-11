@@ -1734,7 +1734,8 @@ class RewardCommission(UI, InfoHandler):
         future_finish = sorted([f for f in total.get('finish_time') if f is not None])
         logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')
         if len(future_finish):
-            self.config.task_delay(target=future_finish)
+            future = nearest_future(future_finish, interval=60)        
+            self.config.task_delay(target=future)
         else:
             logger.info('[委托-完成] 没有正在运行的委托')
             self.config.task_delay(success=False)
@@ -1747,8 +1748,7 @@ class RewardCommission(UI, InfoHandler):
             and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False) != "do_not_use"
         ]
 
-        if limit_tasks and len(future_finish):
-            future = nearest_future(future_finish)
+        if limit_tasks and len(future_finish):            
             for task in limit_tasks:
                 filter_count = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionFilterCount')
                 filter_count = max(int(filter_count), 1)
@@ -1828,7 +1828,7 @@ class RewardCommission(UI, InfoHandler):
                         )
                     future_excution.append(future)
                     future_excution.sort()
-                    future_e = nearest_future(future_excution)
+                    future_e = nearest_future(future_excution, interval=180)
                     self.config.task_delay(target=future_e, task=task)
                     # 提前委托任务以防止紧急委托刷新过多
                     if (future - max(future_e, plan_time) > timedelta(minutes=2 * refresh_time)):
