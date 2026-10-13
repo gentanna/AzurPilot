@@ -12013,7 +12013,11 @@
       "HighValueCommissionAverageRefreshTime": {
         "type": "input",
         "value": 20
-      },      
+      },
+      "DailyCommissionFinishCount": {
+        "type": "input",
+        "value": 0
+      },
       "Blacklist": {
         "type": "textarea",
         "value": ""

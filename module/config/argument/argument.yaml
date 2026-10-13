@@ -1111,6 +1111,7 @@ Commission:
     value: 32
   HighValueCommissionReserve: 2
   HighValueCommissionAverageRefreshTime: 20  
+  DailyCommissionFinishCount: 0
   Blacklist:
     type: textarea
     value: ""
