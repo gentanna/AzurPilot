@@ -204,25 +204,16 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         leveling_zone = self.config.cross_get(
             keys="OpsiHazard1Leveling.OpsiHazard1Leveling.TargetZone", default=0
         ) or 22
-        if self.config.task.command == "OpsiExploreCleanup":
-            logger.info("独立事件补扫任务，跳过初始化自律寻敌")
-        elif (
-            (
-                self.config.task.command == "OpsiScheduling"
-                and self.is_smart_scheduling_enabled()
-            )
-            or overflow_target_task == "OpsiScheduling"
-        ):
-            logger.info("智能调度将决定初始化自律寻敌是否执行")
-            self._smart_scheduling_first_auto_search_pending = True
-        elif (
-            self.zone.zone_id == leveling_zone
-            and (
-                self.config.task.command == "OpsiHazard1Leveling"
-                or overflow_target_task == "OpsiHazard1Leveling"
-            )
-        ):
-            pass
+        from module.os.tasks.smart_explore import smart_explore_enabled
+        if (self.zone.zone_id == leveling_zone 
+            or self.zone.is_port
+            or (self.is_zone_name_hidden 
+                and self.no_meowfficer_searching())
+            or not (self.is_zone_name_hidden 
+                    or self.is_in_opsi_explore() 
+                    or smart_explore_enabled(self.config))
+            ):
+            logger.info('跳过首次自动搜索')
         else:
             self.run_first_auto_search()
 
