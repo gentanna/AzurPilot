@@ -686,6 +686,14 @@ class OpsiAshBeacon(Meta):
 
     def run(self):
         """执行信标攻击任务主流程：进入 META 页面、攻击、领取奖励、延迟到下次服务器更新。"""
+        # 维护限制
+        if ((self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) - current_time()) < timedelta(minutes=12)
+            and self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) > current_time()
+            ):
+            logger.hr('触发延迟条件: 维护即将到来')
+            self.config.task_delay(target=self.config.cross_get(keys='Commission.Commission.MaintainEnd', default=False))
+            self.config.task_stop()
+
         self.ui_ensure(page_reward)
         self._begin_beacon()
         self.ui_goto_main()
@@ -873,6 +881,14 @@ class AshBeaconAssist(Meta):
         成功协助后领取奖励并延迟到下次服务器更新；
         未找到可协助的信标则延迟 10-20 分钟后重试。
         """
+        # 维护限制
+        if ((self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) - current_time()) < timedelta(minutes=12)
+            and self.config.cross_get(keys='Commission.Commission.MaintainStart', default=False) > current_time()
+            ):
+            logger.hr('触发延迟条件: 维护即将到来')
+            self.config.task_delay(target=self.config.cross_get(keys='Commission.Commission.MaintainEnd', default=False))
+            self.config.task_stop()
+
         self.ui_ensure(page_reward)
 
         if self._begin_meta_assist():
