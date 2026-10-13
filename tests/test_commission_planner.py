@@ -406,8 +406,8 @@ class TestCommissionAlgorithmSwitch(unittest.TestCase):
         worker.daily = SelectedGrids([daily, extra])
         worker.urgent = SelectedGrids([urgent, running])
 
-        self.assertEqual(worker._commission_high_value_count(2), 2)
-        self.assertEqual(worker._commission_high_value_count(1), 1)
+        self.assertEqual(worker._commission_high_value(2), 2)
+        self.assertEqual(worker._commission_high_value(1), 1)
 
 
 class TestCommissionValueModel(unittest.TestCase):

@@ -432,7 +432,7 @@ class RewardCommission(Dock, UI, InfoHandler):
             preset = GeneratedConfig.Commission_PresetFilter
         return preset, DICT_FILTER_PRESET[preset]
 
-    def _commission_high_value_count(self, filter_count):
+    def _commission_high_value(self, filter_count):
         """统计前若干条委托过滤规则匹配的待执行委托数量。"""
         preset, string = self._commission_filter_get()
         COMMISSION_FILTER.load(string)
@@ -448,7 +448,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         )
         for comm in high_value:
             logger.info(comm)
-        return len(high_value)
+        return high_value
 
     def _commission_choose_legacy(self, daily, urgent):
         """按过滤器顺序贪心选择委托，保持默认传统行为。"""
@@ -2669,8 +2669,9 @@ class RewardCommission(Dock, UI, InfoHandler):
             for task in limit_tasks:
                 filter_count = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionFilterCount')
                 filter_count = max(int(filter_count), 1)
-                high_value_count = self._commission_high_value_count(filter_count)
-                if self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit') == 'legacy':
+                high_value = self._commission_high_value(filter_count)
+                high_value_count = len(high_value)                
+                if self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit') == "legacy":
                     reserve = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionReserve')                
                     reserve = max(int(reserve), 1)                
                     if high_value_count >= reserve:                        
@@ -2695,21 +2696,33 @@ class RewardCommission(Dock, UI, InfoHandler):
                         extra_count = 4 
                     else:
                         extra_count = 0
-                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44]
+                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44, 15.71, 16.97, 18.21, 19.45, 20.67]
+                    # 预测委托接取
+                    high_value_duration = [comm.duration for comm in high_value if comm is not None]
+                    if len(future_finish) > high_value_count:
+                        for _ in range(len(future_finish) - high_value_count):
+                            high_value_duration.append(timedelta(hours=1))
+                    high_value_duration.sort()
+                    for i in range(len(future_finish)):
+                        future_finish.append(future_finish[i] + high_value_duration[i])
+                        future_finish.sort()
+                    logger.info(f'[委托-完成] 预测委托完成时间: {[str(f) for f in future_finish]}')
                     future_excution = []                      
                     for i in range(len(future_finish)):
                         if plan_time > maintain_start_time or future_finish[i] < maintain_start_time:
-                            if i + extra_count - high_value_count >= 0:
-                                future_t = future_finish[i] - timedelta(minutes=schedule[i + extra_count - high_value_count] * refresh_time - 20)
+                            forecast_refresh_count = 4 if future_finish[i].date() > plan_time.date() else 0
+                            if i + extra_count - high_value_count - forecast_refresh_count >= 0:
+                                future_t = future_finish[i] - timedelta(minutes=schedule[i + extra_count - high_value_count - forecast_refresh_count] * refresh_time - 20)
                                 if future_t.date() == future_finish[i].date():
                                     future_t += timedelta(minutes=20)
                                 future_excution.append(future_t)
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
+                        forecast_refresh_count = len([f for f in future_finish if f.date() > plan_time.date()])
                         extra_count -= len([f for f in future_finish if plan_time <= maintain_start_time and f >= maintain_start_time])
                         logger.info(
-                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish) + extra_count}，"
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count + forecast_refresh_count}/{len(future_finish) + extra_count}，"
                             f"延迟任务 '{task}'"
                         )
                     future_excution.append(future)
