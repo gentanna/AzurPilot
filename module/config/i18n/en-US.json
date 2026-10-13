@@ -2658,6 +2658,10 @@
       "name": "Average refresh time for High-value commissions (minutes)",
       "help": "The average time for urgent-commission farming to refresh a high-value urgent-commission."
     },
+    "DailyCommissionFinishCount": {
+      "name": "Daily commission completion volume (reset after the last commission execution of the day)",
+      "help": ""
+    },
     "Blacklist": {
       "name": "Commission blacklist",
       "help": "Enter commission filter rules to ignore, separated by half-width commas (,), for example: ExtraBook, UrgentOil-8, Major. The blacklist applies to both the traditional greedy strategy and the planner."

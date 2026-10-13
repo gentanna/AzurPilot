@@ -459,8 +459,8 @@ class RewardCommission(Dock, UI, InfoHandler):
             preset = GeneratedConfig.Commission_PresetFilter
         return preset, DICT_FILTER_PRESET[preset]
 
-    def _commission_high_value_count(self, filter_count, total):
-        """统计前若干条委托过滤规则匹配的待执行委托数量。"""
+    def _commission_high_value(self, filter_count, total):
+        """统计前若干条委托过滤规则匹配的待执行委托。"""
         preset, string = self._commission_filter_get()
         COMMISSION_FILTER.load(string)
         high_value = COMMISSION_FILTER.apply_first(
@@ -474,7 +474,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         )
         for comm in high_value:
             logger.info(comm)
-        return len(high_value)
+        return high_value
 
     def _commission_choose_legacy(self, daily, urgent):
         """按过滤器顺序贪心选择委托，保持默认传统行为。"""
@@ -1744,6 +1744,8 @@ class RewardCommission(Dock, UI, InfoHandler):
                     self._commission_mode_reset()                                       
                 if self._commission_find_and_start(comm, is_urgent=False):
                     comm.convert_to_running()
+                    if comm.is_daily_commission:
+                        setattr(self.config, 'Commission_DailyCommissionFinishCount', self.config.Commission_DailyCommissionFinishCount + 1)
                 else:
                     return                
         if self.urgent_choose:
@@ -1757,7 +1759,7 @@ class RewardCommission(Dock, UI, InfoHandler):
                     skip_first_mode_ensure = True
                     self._commission_ensure_mode('urgent')
                 if self._commission_find_and_start(comm, is_urgent=True):
-                    comm.convert_to_running()
+                    comm.convert_to_running()                    
                     if comm.is_gem_commission:
                         try:
                             from module.statistics.cl1_database import db as cl1_db
@@ -2723,7 +2725,9 @@ class RewardCommission(Dock, UI, InfoHandler):
                     mode = 'Maintenace'
             filter_count = getattr(self.config, f'{mode}_HighValueCommissionFilterCount')                
             filter_count = max(int(filter_count), 1)                
-            high_value_count = self._commission_high_value_count(filter_count, total)
+            high_value = self._commission_high_value(filter_count, total)
+            high_value_count = len(high_value)
+            daily_refresh_count = max(0, 10 - self.config.Commission_DailyCommissionFinishCount - len([comm for comm in high_value if comm.is_daily_commission]))
             reserve = getattr(self.config, f'{mode}_HighValueCommissionReserve')                 
             reserve = max(int(reserve), 1)
             refresh_time = getattr(self.config, f'{mode}_HighValueCommissionAverageRefreshTime') 
@@ -2742,21 +2746,34 @@ class RewardCommission(Dock, UI, InfoHandler):
                             f"继续任务 '{task}'"
                         )
                 else:                    
-                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16]
+                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44, 15.71]
+                    # 预测委托接取
+                    high_value_duration = [comm.duration for comm in high_value if comm is not None]
+                    future_predict = list(future_finish)                    
+                    if len(future_predict) > high_value_count:
+                        for _ in range(len(future_predict) - high_value_count):
+                            high_value_duration.append(timedelta(hours=1))
+                    high_value_duration.sort()
+                    for i in range(len(future_predict)):
+                        future_predict.append(future_predict[i] + high_value_duration[i])
+                        future_predict.sort()
+                    logger.info(f'[委托-完成] 预测委托完成时间: {[str(f) for f in future_predict]}')
                     future_excution = []
-                    for i in range(len(future_finish)):
-                        if plan_time > maintenace_start_time + timedelta(minutes=10) or future_finish[i] < maintenace_start_time - timedelta(hours=2):
-                            if i - high_value_count >= 0:
-                                future_t = future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time - 20)
-                                if future_t.date() == future_finish[i].date():
+                    for i in range(len(future_predict)):
+                        if plan_time > maintenace_start_time + timedelta(minutes=10) or future_predict[i] < maintenace_start_time - timedelta(hours=2):
+                            forecast_refresh_count = daily_refresh_count if future_predict[i].date() == plan_time.date() else 10
+                            if i - high_value_count - forecast_refresh_count >= 0:
+                                future_t = future_predict[i] - timedelta(minutes=schedule[i - high_value_count - forecast_refresh_count] * refresh_time - 20)
+                                if future_t.date() == future_predict[i].date():
                                     future_t += timedelta(minutes=20)
                                 future_excution.append(future_t)
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
+                        forecast_refresh_count = daily_refresh_count + len([f for f in future_predict if f.date() > plan_time.date()])
                         extra_count = -len([f for f in future_finish if plan_time <= maintenace_start_time and f >= maintenace_start_time])
                         logger.info(
-                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish) + extra_count}，"
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count + forecast_refresh_count}/{len(future_predict) + extra_count}，"
                             f"延迟任务 '{task}'"
                         )
                     future_excution.append(future)
@@ -2774,6 +2791,8 @@ class RewardCommission(Dock, UI, InfoHandler):
         
         # 延后委托
         self.config.task_delay(target=future_p)
+        if future_p.date() > plan_time.date():
+            setattr(self.config, 'Commission_DailyCommissionFinishCount', -len([comm for comm in high_value if comm.is_daily_commission]))
 
         # 延后出击、活动、META作战、演习、大世界开荒和大世界每日。
         self.config.get_next_task()

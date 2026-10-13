@@ -293,6 +293,15 @@ class Commission:
         """
         return self.valid and self.genre == 'urgent_gem'
 
+    @property
+    def is_daily_commission(self):
+        """是否为每日委托。
+
+        Returns:
+            bool: 是每日委托返回 True，否则返回 False。
+        """
+        return self.valid and self.genre in ['daily_chip', 'daily_resource']
+
     def _commission_available_time_parse(self):
         """识别紧急委托的剩余可启动时间。
 

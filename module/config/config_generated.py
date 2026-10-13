@@ -500,6 +500,7 @@ class GeneratedConfig:
     Commission_HighValueCommissionFilterCount = 32
     Commission_HighValueCommissionReserve = 2
     Commission_HighValueCommissionAverageRefreshTime = 20    
+    Commission_DailyCommissionFinishCount = 0
     Commission_Blacklist = None
     Commission_DoMajorCommission = False
     Commission_CommissionNotifyReward = False
