@@ -246,8 +246,9 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
         self.meow_search_metrics_start()
         try:
             search_completed = self.run_strategic_search()
+            self.get_current_zone()
             with self._meow_debug_clip():
-                if search_completed:
+                if search_completed and self.is_zone_name_hidden:
                     self._solved_map_event = set()
                     self._solved_fleet_mechanism = False
                     # 重扫地图找画面上可见的事件；逐队扫雷达清问号是强制移动的
@@ -299,8 +300,9 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
             except Exception as e:
                 logger.warning(f'[大世界-耄耋相接] 战略搜索异常: {e}')
 
+            self.get_current_zone()
             with self._meow_debug_clip():
-                if search_completed:
+                if search_completed and self.is_zone_name_hidden:
                     self._solved_map_event = set()
                     self._solved_fleet_mechanism = False
                     # 重扫地图找画面上可见的事件；逐队扫雷达清问号是强制移动的
