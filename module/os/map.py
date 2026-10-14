@@ -2399,33 +2399,12 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
 
             # ---- L2：挪舰队 ----
             # “看到了问号却点不到”只能靠挪舰队解决，和行动力无关：
-            # 已经看见的猫不能因为行动力不够就放跑，先挪了再说。
-            # 只有“全队雷达上什么都没有”这种没线索的情况才看行动力——
-            # 这一轮是为找事件额外多开的，当前行动力不够就留给下一轮练级。
-            if self._question_unreachable:
-                logger.info("[大世界] 有舰队看到问号却无法到达，直接执行 L2 挪舰队")
-            else:
-                current_ap = self._read_current_action_point()
-                if current_ap <= self._FIXED_PATROL_L2_AP:
-                    logger.info(
-                        f"[大世界] 没看到事件、当前行动力 {current_ap} 不超过 "
-                        f"{self._FIXED_PATROL_L2_AP}，跳过 L2 挪舰队，留给下一轮练级"
-                    )
-                    return
-                logger.info(
-                    f"[大世界] 没看到事件、当前行动力 {current_ap} 大于 "
-                    f"{self._FIXED_PATROL_L2_AP}，执行 L2 挪舰队"
-                )
             logger.hr("[大世界] 强制移动 L2：逐队挪动舰队后整图重扫")
             self._move_fleets_and_rescan()
         finally:
             self._in_akashi_recovery = False
             # 复位主队，避免后续流程作用在错误的舰队上
             self.fleet_set(self.config.OpsiFleet_Fleet)
-
-    # L2（挪舰队）要求的当前行动力下限：不超过该值就不挪，留给下一轮练级。
-    # 侵蚀1 一次出击消耗 5 点行动力，当前行动力要大于 7 才有余量多开这一轮。
-    _FIXED_PATROL_L2_AP = 7
 
     def _read_current_action_point(self):
         """读界面上的当前行动力（不含行动力药剂箱）。
