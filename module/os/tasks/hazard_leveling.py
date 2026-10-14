@@ -88,22 +88,24 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         # 内部有节流，不会每轮战斗都真的扫目录。
         cleanup_clips_if_due(self.config)
 
+        self.get_current_zone()
         with clip_recording(
             self.config,
             self.config.OpsiHazard1Leveling_DebugClip,
         ):
-            # 第一次重扫：检查是否还有事件
-            self._solved_map_event = set()
-            self._solved_fleet_mechanism = False
-            self.map_rescan()
+            if self.is_zone_name_hidden:
+                # 第一次重扫：检查是否还有事件
+                self._solved_map_event = set()
+                self._solved_fleet_mechanism = False
+                self.map_rescan()
 
-            # 强制移动（开关）：开启后先零移动遍历 1~4 队雷达找问号；仍没找到
-            # 且行动力大于阈值时，再逐个挪动舰队重扫（见 _execute_fixed_patrol_scan）。
-            # 挪舰队那段的整图重扫在 _execute_fixed_patrol_scan 内部完成，返回后
-            # 不再二次重扫，否则清完明石后会再次重复进明石商店（购买之外的多余进店）。
-            if self._forced_move_enabled():
-                if not self._solved_map_event:
-                    self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
+                # 强制移动（开关）：开启后先零移动遍历 1~4 队雷达找问号；仍没找到
+                # 且行动力大于阈值时，再逐个挪动舰队重扫（见 _execute_fixed_patrol_scan）。
+                # 挪舰队那段的整图重扫在 _execute_fixed_patrol_scan 内部完成，返回后
+                # 不再二次重扫，否则清完明石后会再次重复进明石商店（购买之外的多余进店）。
+                if self._forced_move_enabled():
+                    if not self._solved_map_event:
+                        self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
 
             self.handle_after_auto_search()
 
