@@ -434,15 +434,15 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         logger.info(f'[退役-旧] 退役总数: {total}')
         return total
 
-    def retire_gems_farming_flagships(self, keep_one=True) -> int:
+    def retire_gems_farming_flagships(self, keep_two=True) -> int:
         """
         退役 GemsFarming 遗弃的旗舰（普通航母）。
 
         筛选条件：稀有度为 common、等级 > 1、不在编队中、状态为空闲。
-        如果 keep_one 为 True，会保留等级最低的一艘。
+        如果 keep_two 为 True，会保留等级最低的两艘。
 
         Args:
-            keep_one (bool): 是否至少保留一艘普通航母。默认 True。
+            keep_two (bool): 是否至少保留两艘普通航母。默认 True。
 
         Returns:
             int: 退役的舰船数量。
@@ -461,7 +461,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         # 稀有度已由上面的 dock_filter_set(rarity='common') 在筛选层限定，扫描阶段
         # 再校验一次，会让颜色采样异常的 'unknown' 卡被漏掉，导致废弃旗舰退役不到而堆积。
         # 与 gems_farming / ambush_1_1 中的同类调用保持一致：这里直接关闭稀有度子扫描器。
-        scanner = ShipScanner(fleet=0, status='free', level=(2, 100))
+        scanner = ShipScanner(fleet=0, status='free', level=(1, 100))
         scanner.disable('emotion')
         scanner.disable('rarity')
 
@@ -481,13 +481,13 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             if not ships:
                 # 无可退役舰船，退出
                 break
-            if keep_one:
-                if len(ships) < 2:
+            if keep_two:
+                if len(ships) < 3:
                     break
                 else:
-                    # 保留等级最低的一艘
+                    # 保留等级最低的两艘
                     ships.sort(key=lambda s: -s.level)
-                    ships = ships[:-1]
+                    ships = ships[:-2]
 
             for ship in ships:
                 self.device.click(ship.button)
@@ -634,7 +634,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     logger.warning('[退役-船坞] 未退役舰船，尝试重置快速退役设置为"全部"')
                     self.quick_retire_setting_set('all')
                     total = self.retire_ships_one_click()
-            total += self.retire_gems_farming_flagships(keep_one=total > 0)
+            total += self.retire_gems_farming_flagships(keep_two=total > 0)
             if not total:
                 logger.critical('[退役] 杂鱼大叔~ 根本没有船可以退役啦，你是来表演冷笑话的吗？❤')
                 logger.critical('[退役] 赶紧把游戏里的”一键退役”配置好啦！不配置的话，难道大叔想让我亲手帮你点吗？❤')
