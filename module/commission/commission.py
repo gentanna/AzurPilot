@@ -457,6 +457,9 @@ class RewardCommission(Dock, UI, InfoHandler):
         self.max_commission = 5 if any(comm.genre == 'daily_event' for comm in total) else 4
         running_count = len([comm for comm in total if comm.status == 'running'])
         logger.attr('运行中', f'{running_count}/{self.max_commission}')
+        if running_count >= self.max_commission:
+            logger.info('无空闲委托槽，结束本轮运行')
+            return SelectedGrids([]), SelectedGrids([])
 
         preset, string = self._commission_filter_get()
         logger.attr('委托过滤器', preset)
@@ -481,8 +484,6 @@ class RewardCommission(Dock, UI, InfoHandler):
                 logger.info('[委托-选择] 委托数量不足，无每日和紧急委托可选')
 
         self.comm_choose = run
-        if running_count >= self.max_commission:
-            return SelectedGrids([]), SelectedGrids([])
 
         run = run[:self.max_commission - running_count]
         daily_choose = run.intersect_by_eq(daily)
@@ -526,6 +527,9 @@ class RewardCommission(Dock, UI, InfoHandler):
         running_list = [c for c in total if c.status == 'running']
         running_count = len(running_list)
         logger.attr('运行中', f'{running_count}/{self.max_commission}')
+        if running_count >= self.max_commission:
+            logger.info('无空闲委托槽，结束本轮运行')
+            return SelectedGrids([]), SelectedGrids([])
 
         # 加载过滤器字符串
         preset, string = self._commission_filter_get()
@@ -2588,41 +2592,69 @@ class RewardCommission(Dock, UI, InfoHandler):
             self.device.click(TACTICAL_CLASS_CANCEL)
             self.device.sleep((0.5, 1.0))
 
-        # 确保没有空闲委托槽     
-        for i in range(8):
-            self.ui_ensure(page_reward)            
-            if self.commission_receive():   
-                j = 0
-            elif i == 0:
-                j = 1
-            else:
-                j += 1
-            self.handle_info_bar()
-            self.commission_start()
-            if not self.mode_ensure or not self.comm_scan:
-                return
-            elif not self.daily_choose and not self.urgent_choose:
-                break 
-            elif i < 7:             
-                if j > 0:
-                    logger.warning('存在空闲委托槽')
-                if j < 3:
-                    continue                         
-            logger.warning('委托系统出错,重启游戏')            
-            self.config.task_call(task='Restart')
-            self.config.task_stop()
+        for k in range(6):
+            if k == 5:
+                logger.warning('委托系统出错,重启游戏')            
+                self.config.task_call(task='Restart')
+                self.config.task_stop()
 
+            # 确保没有空闲委托槽     
+            for i in range(8):
+                if k == 0 or i > 0:
+                    self.ui_ensure(page_reward)            
+                if self.commission_receive():   
+                    j = 0
+                elif i == 0:
+                    j = 1
+                else:
+                    j += 1
+                self.handle_info_bar()
+                self.commission_start()
+                if not self.mode_ensure or not self.comm_scan:
+                    return
+                elif not self.daily_choose and not self.urgent_choose:
+                    break 
+                elif i < 7:             
+                    if j > 0:
+                        logger.warning('存在空闲委托槽')
+                    if j < 3:
+                        continue                         
+                logger.warning('委托系统出错,重启游戏')            
+                self.config.task_call(task='Restart')
+                self.config.task_stop()
+            
+            total = self.daily.add_by_eq(self.urgent)
+            future_finish = sorted([f for f in total.get('finish_time') if f is not None])            
+            if len(future_finish):
+                future = nearest_future(future_finish, interval=6)
+                plan_time = current_time()
+                if future - plan_time > timedelta(seconds=40):
+                    # 提前30秒预热
+                    future -= timedelta(seconds=30)
+                    break
+                else:                    
+                    self.ui_ensure(page_reward)
+                    # 等待最多40秒
+                    logger.info('等待最多40秒')
+                    wait_time = Timer(40)
+                    wait_time.start()       
+                    if future == future_finish[0]:
+                        while not wait_time.reached():
+                            self.device.screenshot()
+                            if self.appear(REWARD_1, offset=(20, 20), interval=1) or self.appear(REWARD_1_WHITE, offset=(20, 20), interval=1):
+                                break
+                    else:
+                        while not wait_time.reached():
+                            if current_time() - future >= timedelta(seconds=3):                            
+                                break
+            else:
+                logger.warning('委托系统出错,重启游戏')            
+                self.config.task_call(task='Restart')
+                self.config.task_stop()          
+       
         # 调度
-        total = self.daily.add_by_eq(self.urgent)
-        future_finish = sorted([f for f in total.get('finish_time') if f is not None])
-        logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')
-        if len(future_finish):
-            future = nearest_future(future_finish)
-            self.config.task_delay(target=future)
-        else:
-            logger.warning('委托系统出错,重启游戏')            
-            self.config.task_call(task='Restart')
-            self.config.task_stop()
+        logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')           
+        self.config.task_delay(target=future)
 
         # 延迟钻石 farming / 三油低耗任务
         # 遍历使用 GemsFarming 配置组的任务，检查是否启用且开启了 CommissionLimit
@@ -2668,5 +2700,5 @@ class RewardCommission(Dock, UI, InfoHandler):
                         )
                     future_excution.append(future)
                     future_excution.sort()
-                    future_e = future_excution[0]
+                    future_e = future_excution[0] if future - future_excution[0] >= timedelta(minutes=5) else future
                     self.config.task_delay(target=future_e, task=task)
