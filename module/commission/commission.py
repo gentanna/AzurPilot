@@ -2584,40 +2584,76 @@ class RewardCommission(Dock, UI, InfoHandler):
             self.device.click(TACTICAL_CLASS_CANCEL)
             self.device.sleep((0.5, 1.0))
 
-        # 确保没有空闲委托槽     
-        j = 0
-        full_scan = True
-        for i in range(8):
-            self.ui_ensure(page_reward)            
-            if self.commission_receive():                                   
-                j = 0
-            else:
-                j += 1                    
-            try:
-                self.commission_start(full_scan)                
-                if full_scan or self.daily_choose or self.urgent_choose:
-                    total = self.daily.add_by_eq(self.urgent)
-                if self.running_count >= self.max_commission:                    
-                    break
-                elif j > 0:                    
-                    logger.warning('存在空闲委托槽')
-                full_scan = False
-            except ModeEnsureError:  
-                logger.warning('模式确认失败') 
-                full_scan = True
-            except CommScanError:
-                logger.warning('委托扫描失败')    
-                full_scan = True
-            if i < 7 and j < 3:                    
-                continue       
+        future = self.config.Scheduler_NextRun
+        for k in range(6):
+            self.ui_ensure(page_reward)
+            if future.time().second % 3 != 0:
+                logger.info('等待最多40秒')
+                wait_time = Timer(40)
+                wait_time.start()       
+                if future.time().second % 3 == 1:
+                    while not wait_time.reached():                            
+                        if self.appear_then_click(REWARD_1, offset=(20, 20), interval=1):
+                            self.interval_reset(GET_SHIP)
+                            break
+                        elif self.appear_then_click(REWARD_1_WHITE, offset=(20, 20), interval=1):
+                            self.interval_reset(GET_SHIP)
+                            break
+                        self.device.screenshot()
+                else:
+                    while not wait_time.reached():
+                        if current_time() - future >= timedelta(seconds=33):                            
+                            break
+
+            # 确保没有空闲委托槽
+            j = 0
+            full_scan = (future.time().second % 3 == 0)    
+            for i in range(8):
+                if i > 0:
+                    self.ui_ensure(page_reward)            
+                if self.commission_receive():                       
+                    j = 0
+                else:
+                    j += 1  
+                try:
+                    self.commission_start(full_scan)
+                    if not (k or i) or full_scan or self.daily_choose or self.urgent_choose:
+                        total = self.daily.add_by_eq(self.urgent)
+                    if self.running_count >= self.max_commission:
+                        break
+                    elif j > 0:
+                        logger.warning('存在空闲委托槽')
+                    full_scan = False
+                except ModeEnsureError:  
+                    logger.warning('模式确认失败') 
+                    full_scan = True
+                except CommScanError:
+                    logger.warning('委托扫描失败')    
+                    full_scan = True
+                if i < 7 and j < 3:                    
+                    continue                           
+                from module.exception import GameBugError
+                raise GameBugError
+            
+            future_finish = sorted([f for f in total.get('finish_time') if f is not None])            
+            if len(future_finish):
+                future = nearest_future(future_finish, interval=6) - timedelta(seconds=30)
+                future_second = 3 * (future.time().second // 3)
+                if future == future_finish[0] - timedelta(seconds=30):
+                    future = future.replace(second=future_second + 1)
+                else:
+                    future = future.replace(second=future_second + 2)
+                plan_time = current_time()
+                if future - plan_time > timedelta(seconds=6):                                       
+                    break        
+            if k < 5:
+                continue             
             from module.exception import GameBugError
             raise GameBugError
-
-        # 调度 
-        logger.hr('调度委托', level=1)       
-        future_finish = sorted([f for f in total.get('finish_time') if f is not None])
-        logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')        
-        future = nearest_future(future_finish)
+       
+        # 调度
+        logger.hr('调度委托', level=1) 
+        logger.info(f'[委托-完成] 委托完成时间: {[str(f) for f in future_finish]}')           
         self.config.task_delay(target=future)
 
         # 延迟钻石 farming / 三油低耗任务
