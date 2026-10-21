@@ -2550,8 +2550,10 @@ class AzurLaneAutoScript:
                     del_cached_property(self, 'config')
                     logger.info('[AzurPilot] 服务器或网络已恢复。重启游戏客户端')
                     self.config.task_call('Restart')
-                # 检查计划的模拟器重启（在任务之间，不会中断正在运行的任务）
-                if self.config.EmulatorManagement_ScheduledEmulatorRestart:
+                # 检查计划的模拟器重启（在任务之间，不会中断正在运行的任务,下一次委托在 3 分钟内时延后）
+                if (self.config.EmulatorManagement_ScheduledEmulatorRestart 
+                    and current_time() < self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False) - timedelta(minutes=3)
+                    ):
                     elapsed_hours = (time.monotonic() - self.last_emulator_restart_time) / 3600
                     interval = self.config.EmulatorManagement_RestartIntervalHours
                     if elapsed_hours >= interval:
