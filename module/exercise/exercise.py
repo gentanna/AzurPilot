@@ -290,6 +290,12 @@ class Exercise(ExerciseCombat):
             in: 任意页面
             out: page_exercise
         """
+        # 委托限制
+        if ((self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False) - current_time()) < datetime.timedelta(minutes=10)):
+            logger.hr('触发延迟条件: 委托即将到来')
+            self.config.task_delay(target=self.config.cross_get(keys='Commission.Scheduler.NextRun', default=False))
+            self.config.task_stop()
+
         self.ui_ensure(page_exercise)
         server_update = self.config.Scheduler_ServerUpdate
 
