@@ -2708,7 +2708,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         for task in (self.config.pending_task + self.config.waiting_task):
             if (((task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives', 'OpsiAshBeacon', 'OpsiAshAssist'] 
                   and future - self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False) < timedelta(minutes=10)) 
-                 or (task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
+                 or (task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC', 'Exercise'] 
                      and future - self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False) < timedelta(minutes=5)))
                  and future > self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun', default=False)
                 ):
