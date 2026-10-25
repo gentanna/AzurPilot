@@ -16,10 +16,10 @@ from heapq import nlargest
 from math import ceil, exp2, isfinite, log, log1p
 
 
-VALUE_SCALE = 1_000_000_000
+VALUE_SCALE = 1_000_000_000_000
 LN_2 = log(2)
-MIN_BEAM_WIDTH = 128
-BEAM_WIDTH_FACTOR = 16
+MIN_BEAM_WIDTH = 1024
+BEAM_WIDTH_FACTOR = 128
 
 
 @dataclass(frozen=True)
@@ -283,8 +283,7 @@ def optimize_commission_plan(
     slots = tuple(sorted(max(int(value), 0) for value in slot_available))
     horizon = max(int(horizon), 0)
     if beam_width is None:
-        # 小规模实例优先保留 n² 个状态；n >= 16 后严格按 16n 线性增长。
-        beam_width = max(MIN_BEAM_WIDTH, min(job_count * job_count, BEAM_WIDTH_FACTOR * job_count))
+        beam_width = max(MIN_BEAM_WIDTH, job_count * BEAM_WIDTH_FACTOR * 2 ** (job_count // 10))
     else:
         beam_width = int(beam_width)
         if beam_width <= 0:
@@ -322,11 +321,11 @@ def optimize_commission_plan(
     branch_order = tuple(sorted(
         range(len(jobs)),
         key=lambda index: (
-            -base_values[index],
+            -base_values[index] * model.delay_factor(0, jobs[index].deadline),
             jobs[index].duration,
             jobs[index].source_index,
-        ),
-    ))
+            ),
+        ))
     initial_mask = (1 << len(jobs)) - 1
     state_count = 0
     pruned_state_count = 0
@@ -348,26 +347,46 @@ def optimize_commission_plan(
     def optimistic_rank(state):
         """返回任意后续计划完整比较键的逐项严格乐观上界。"""
         current = state.result
+        slots = state.slots
+        k = len(slots)
         start = state.slots[0]
         # 所有真实后续启动都不会早于当前最早槽位。假设每个可行委托都能同时
         # 在该时刻启动，会高估折现价值和可选未折现价值，因此是严格安全上界。
+        remaining = [
+            i for i in branch_order
+            if state.mask & (1 << i) and start < limits[i]
+            ]
+        remaining.sort(key=lambda i: -(
+            base_values[i] * delay_factor(start, jobs[i].deadline)
+            ))
+        if not remaining:
+            return (
+                current.utility, current.full_value,
+                -current.makespan, -current.completion_sum,
+                (*current.order_key, order_sentinel),
+                )
+
+        min_dur = min(jobs[i].duration for i in remaining)
+
         future_utility = 0
         future_full_value = 0
-        if start < horizon:
-            for index in branch_order:
-                if not state.mask & (1 << index) or start >= limits[index]:
-                    continue
-                future_utility += (
-                    base_values[index] * delay_factor(start, jobs[index].deadline)
+        for j, i in enumerate(remaining):
+            # 第 j//k 轮才能排到；每一轮至少 min_dur 秒
+            optimistic_start = start + (j // k) * min_dur
+            if optimistic_start >= limits[i]:
+                continue
+            future_utility += (
+                base_values[i] * delay_factor(optimistic_start, jobs[i].deadline)
                 )
-                future_full_value += full_values[index]
+            future_full_value += full_values[i]
+
         return (
             current.utility + future_utility,
             current.full_value + future_full_value,
-            -current.makespan,
-            -current.completion_sum,
-            (*current.order_key, order_sentinel),
-        )
+           -current.makespan,
+           -current.completion_sum,
+           (*current.order_key, order_sentinel),
+           )
 
     def beam_rank(state, upper_rank):
         """优先保留潜在上限高、当前结果好且槽位更早的状态。"""
