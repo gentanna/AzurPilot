@@ -679,9 +679,9 @@ class RewardCommission(Dock, UI, InfoHandler):
         full_value = plan.full_value / plan.value_scale
         delay_loss = plan.delay_loss / plan.value_scale
         logger.info(f'[委托-规划] 选择数量: {score}')
-        logger.info(f'[委托-规划] 折现价值: {utility:.6f} T1')
-        logger.info(f'[委托-规划] 立即启动价值: {full_value:.6f} T1')
-        logger.info(f'[委托-规划] 等待损失: {delay_loss:.6f} T1')
+        logger.info(f'[委托-规划] 折现价值: {utility:.9f} T1')
+        logger.info(f'[委托-规划] 立即启动价值: {full_value:.9f} T1')
+        logger.info(f'[委托-规划] 等待损失: {delay_loss:.9f} T1')
         logger.info(
             f'[委托-规划] 搜索状态数: {plan.state_count}, '
             f'束宽: {plan.beam_width}, 裁剪: {plan.pruned_state_count}'
@@ -692,8 +692,8 @@ class RewardCommission(Dock, UI, InfoHandler):
             upper_value = plan.utility_upper_bound / plan.value_scale
             gap = plan.utility_gap / plan.value_scale
             logger.info(
-                f'[委托-规划] 最优性证书: 尚未证明，严格上界 {upper_value:.6f} T1，'
-                f'最大可能差距 {gap:.6f} T1'
+                f'[委托-规划] 最优性证书: 尚未证明，严格上界 {upper_value:.9f} T1，'
+                f'最大可能差距 {gap:.9f} T1'
             )
         logger.info(f'[委托-规划] 规划边界: {horizon_time:%Y-%m-%d %H:%M:%S}')
         logger.info('[委托-规划] 比较规则: 折现总价值 > 未折现总价值 > 最晚结束时间 > 完成时间总和 > 稳定编号')
