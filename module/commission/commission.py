@@ -2755,7 +2755,7 @@ class RewardCommission(Dock, UI, InfoHandler):
                             f"继续任务 '{task}'"
                         )
                 else:                    
-                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44, 15.71]
+                    schedule = [4.61, 6.64, 8.41, 10.05, 11.61, 13.11, 14.57, 16.00, 17.41, 18.79]
                     # 预测委托接取
                     high_value_duration = [comm.duration for comm in high_value if comm is not None]
                     future_predict = list(future_finish)                    
