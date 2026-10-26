@@ -2688,19 +2688,26 @@ class RewardCommission(Dock, UI, InfoHandler):
                     refresh_time = self.config.cross_get(f'{task}.GemsFarming.HighValueCommissionAverageRefreshTime')
                     refresh_time = max(refresh_time, 1)
                     maintain_start_time = self.config.Commission_MaintainStart    
-                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16]
+                    maintain_end_time = self.config.Commission_MaintainEnd
+                    if (maintain_start_time.date() == maintain_end_time.date() 
+                        and plan_time.date() == maintain_start_time.date() 
+                        and plan_time < maintain_start_time):
+                        extra_count = 4 
+                    else:
+                        extra_count = 0
+                    schedule = [3.00, 4.75, 6.30, 7.76, 9.16, 10.52, 11.85, 13.15, 14.44]
                     future_excution = []                      
                     for i in range(len(future_finish)):
                         if plan_time > maintain_start_time or future_finish[i] < maintain_start_time:
-                            if i - high_value_count >= 0:
-                                future_t = future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time - 20)
+                            if i + extra_count - high_value_count >= 0:
+                                future_t = future_finish[i] - timedelta(minutes=schedule[i + extra_count - high_value_count] * refresh_time - 20)
                                 if future_t.date() == future_finish[i].date():
                                     future_t += timedelta(minutes=20)
                                 future_excution.append(future_t)
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
-                        extra_count = -len([f for f in future_finish if plan_time <= maintain_start_time and f >= maintain_start_time])
+                        extra_count -= len([f for f in future_finish if plan_time <= maintain_start_time and f >= maintain_start_time])
                         logger.info(
                             f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish) + extra_count}，"
                             f"延迟任务 '{task}'"
