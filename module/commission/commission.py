@@ -2728,6 +2728,14 @@ class RewardCommission(Dock, UI, InfoHandler):
                         )
                     future_excution.append(future)
                     future_excution.sort()
+                    if  plan_time < datetime(2026,11,5,10) and (future_excution[0] >= plan_time or high_value_count >= 4):
+                        logger.info(f'[委托-调度] 设置{task}关卡: t5')
+                        self.config.cross_set(keys=f'{task}.Campaign.Name', value='t5')
+                        self.config.cross_set(keys=f'{task}.Submarine.Fleet', value=1)
+                    else:
+                        logger.info(f'[委托-调度] 设置{task}关卡: 2-4')
+                        self.config.cross_set(keys=f'{task}.Campaign.Name', value='2-4')
+                        self.config.cross_set(keys=f'{task}.Submarine.Fleet', value=0)
                     future_e = future_excution[0]
                     self.config.task_delay(target=future_e, task=task)
                     # 提前委托任务以防止紧急委托刷新过多         
