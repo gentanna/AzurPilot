@@ -162,7 +162,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         for button in [SHIP_CONFIRM, SHIP_CONFIRM_2, EQUIP_CONFIRM, EQUIP_CONFIRM_2, GET_ITEMS_1, SR_SSR_CONFIRM]:
             self.interval_clear(button)
         self.popup_interval_clear()
-        timeout = Timer(10, count=10).start()
+        timeout = Timer(3, count=10).start()
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
