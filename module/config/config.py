@@ -351,7 +351,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                      and now > comm_run - timedelta(minutes=15)) 
                       or (func.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
                           and now > comm_run - timedelta(minutes=10))
-                      or (func.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
+                      or (func.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC', 'Exercise'] 
                           and now > comm_run - timedelta(minutes=5))
                       ):
                     self.task_delay(target=comm_run, task=func.command)
