@@ -85,7 +85,7 @@ class FleetManagement(Dock):
                           check_button=self._formation_visible, retry_wait=2)
         self.ui_ensure(page_fleet)
         phase, current = 'kind', None
-        click = Timer(2)
+        click, settle = Timer(2), Timer(.5)
         opener = fleet_menu_button(fleet_type)
         for _ in self.loop(timeout=75):
             if phase == 'kind':
@@ -106,11 +106,19 @@ class FleetManagement(Dock):
                         phase = 'arrow'
                     else:
                         self.device.click(position_button(menu_area(fleet, fleet_type), f'第{fleet}舰队'))
-                        phase = 'reopen'
+                        phase = 'selected'
+                        settle.reset()
                     click.reset()
                 elif self._formation_visible() and selector_closed(self.device.image, fleet_type) and click.reached():
                     self.device.click(opener)
                     click.reset()
+                continue
+            if phase == 'selected':
+                if (self._formation_visible() and fleet_type_selected(self.device.image, fleet_type)
+                        and selector_closed(self.device.image, fleet_type)
+                        and bottom_fleet_index(self.device.image, fleet_type) == fleet and settle.reached()):
+                    return
+                # 点选队号后菜单会自行关闭，只确认结果，不重新展开菜单。
                 continue
             if phase == 'closed' and self._formation_visible() and selector_closed(self.device.image, fleet_type):
                 return
@@ -130,7 +138,7 @@ class FleetManagement(Dock):
                     self.device.click(opener)
                     phase = 'open'
                 click.reset()
-        raise FleetManagementError(f'未能确认{fleet_type}第{fleet}舰队的选择高亮')
+        raise FleetManagementError(f'未能确认{fleet_type}第{fleet}舰队的切换结果')
 
     def _open_slot(self, slot, fleet_type='surface'):
         """点击固定舰位进入单选船坞；不判断舰名或已选数量OCR。

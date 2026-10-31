@@ -19,11 +19,11 @@ from module.api.protocol import ApiError, ConfigChange
 from module.dorm.assets import (DORM_FLEET_CANCEL, DORM_FLEET_CHECK, DORM_FLEET_CONFIRM,
                                DORM_FLEET_REST, DORM_FLEET_TRAIN, OCR_DORM_FLEET_AMOUNT)
 from module.dorm.fleet_rotation import (DORM_PATH, DormArrangeError, DormCounter, DormFleetScanner,
-                                       FleetRotationDorm, rest_after_rotation, rest_fleet)
+                                       DORM_SLOTS, FleetRotationDorm, rest_after_rotation, rest_fleet)
 from module.exception import GameStuckError
 from module.ocr.al_ocr import AlOcr, OcrSettings
 from module.retire.assets import DOCK_CHECK, DOCK_SELECTED
-from module.ui.assets import DORM_CHECK
+from module.ui.assets import DORM_CHECK, DORM_INFO
 from module.ui.page import page_main
 import tests.test_fleet_rotation as rotation_cases
 import tests.test_fleet_training as training_cases
@@ -91,6 +91,21 @@ class DormRuleTests(unittest.TestCase):
 
 
 class DormImageTests(unittest.TestCase):
+    def test_selected_marker_and_identity_survive_the_reported_overlapping_scroll(self):
+        scanner = DormFleetScanner()
+        old, selected, cleared = frame('picker_partial_last'), frame('picker_overlap_selected'), frame('picker_overlap_cleared')
+        first = next(card for card in scanner.scan(old) if card.col == 6 and card.fleet == 1)
+        fingerprint = scanner.fingerprint(old, first)
+        cards = scanner.scan(selected)
+        snake = next(card for card in cards if card.col == 6 and card.fleet == 1)
+        self.assertEqual([(6, 98)], [(card.col, card.y) for card in cards if scanner.selected(selected, card)])
+        self.assertTrue(scanner.same_ship(selected, snake, fingerprint))
+        different = next(card for card in cards if card.col == 6 and card.y != snake.y)
+        self.assertFalse(scanner.same_ship(selected, different, fingerprint))
+        snake = next(card for card in scanner.scan(cleared) if card.col == 6 and card.fleet == 1)
+        self.assertFalse(scanner.selected(cleared, snake))
+        self.assertTrue(scanner.same_ship(cleared, snake, fingerprint))
+
     def test_scrolled_selected_ship_is_recognized_while_the_last_ship_is_still_partial(self):
         scanner = DormFleetScanner()
         image = frame('picker_partial_last')
@@ -131,6 +146,87 @@ class DormImageTests(unittest.TestCase):
             self.assertEqual((6, 6), DormCounter(DOCK_SELECTED).ocr(frame('picker_selected')))
 
 
+class DormPanelNavigationTests(unittest.TestCase):
+    def controller(self, initial, *, locked=False):
+        tool = FleetRotationDorm.__new__(FleetRotationDorm)
+        tool.config = SimpleNamespace(BUTTON_OFFSET=(20, 20))
+        tool.interval_timer = {}
+        tool.device = SimpleNamespace(image=frame(initial), stuck_record_add=Mock(), sleep=Mock())
+        self.clock, self.current = 100., initial
+        self.enterContext(patch('module.base.timer.time', side_effect=lambda: self.clock))
+        def loop(**kwargs):
+            for _ in range(12):
+                self.clock += .2
+                tool.device.image = frame(self.current)
+                yield None
+        def click(button):
+            if button == DORM_INFO:
+                self.current = 'training_handoff'
+            elif button == DORM_FLEET_REST:
+                if not locked:
+                    self.current = 'rest'
+            elif button == DORM_FLEET_TRAIN:
+                self.current = 'training_handoff'
+            elif button == DORM_SLOTS.buttons[0]:
+                self.current = 'picker_selected'
+            else:
+                self.fail(f'不应在当前后宅面板点击{button}')
+        tool.loop = loop
+        tool.device.click = Mock(side_effect=click)
+        return tool
+
+    def test_existing_exp_popup_confirmation_precedes_rest_tab_and_first_slot(self):
+        tool = self.controller('exp_popup')
+        tool._enter_floor('floor_2')
+        tool._open_picker('floor_2')
+        self.assertEqual([DORM_INFO, DORM_FLEET_REST, DORM_SLOTS.buttons[0]],
+                         [call.args[0] for call in tool.device.click.call_args_list])
+
+    def test_exp_popup_at_picker_handoff_is_confirmed_before_opening_training_slot(self):
+        tool = self.controller('exp_popup')
+        tool._open_picker('floor_1')
+        self.assertEqual([DORM_INFO, DORM_SLOTS.buttons[0]],
+                         [call.args[0] for call in tool.device.click.call_args_list])
+
+    def test_reported_training_panel_is_recognized_and_switches_to_rest_before_opening_picker(self):
+        tool = self.controller('training_handoff')
+        self.assertTrue(tool._panel())
+        self.assertTrue(tool._floor('floor_1'))
+        self.assertFalse(tool._floor('floor_2'))
+        tool._open_picker('floor_2')
+        self.assertEqual([DORM_FLEET_REST, DORM_SLOTS.buttons[0]],
+                         [call.args[0] for call in tool.device.click.call_args_list])
+
+    def test_already_correct_training_panel_opens_the_first_slot_without_switching_tabs(self):
+        tool = self.controller('training_handoff')
+        tool._open_picker('floor_1')
+        tool.device.click.assert_called_once_with(DORM_SLOTS.buttons[0])
+
+    def test_rest_panel_can_recover_back_to_requested_training(self):
+        tool = self.controller('rest')
+        tool._open_picker('floor_1')
+        self.assertEqual([DORM_FLEET_TRAIN, DORM_SLOTS.buttons[0]],
+                         [call.args[0] for call in tool.device.click.call_args_list])
+
+    def test_locked_rest_tab_never_opens_a_slot_in_the_wrong_floor(self):
+        tool = self.controller('training_handoff', locked=True)
+        with self.assertRaisesRegex(DormArrangeError, '未确认进入后宅选船页'):
+            tool._open_picker('floor_2')
+        tool.device.click.assert_called_once_with(DORM_FLEET_REST)
+
+    def test_floor_handoff_requires_two_new_matching_frames(self):
+        tool = self.controller('rest')
+        def transition(**kwargs):
+            for name in ('rest', 'training_handoff', 'rest', 'rest'):
+                self.clock += .2
+                tool.device.image = frame(name)
+                yield None
+        tool.loop = transition
+        tool._enter_floor('floor_2')
+        tool.device.click.assert_called_once_with(DORM_FLEET_REST)
+        self.assertAlmostEqual(100.8, self.clock)
+
+
 class DormSelectionTests(unittest.TestCase):
     def controller(self, pages, selected=()):
         tool = FleetRotationDorm.__new__(FleetRotationDorm)
@@ -159,6 +255,8 @@ class DormSelectionTests(unittest.TestCase):
         scanner = Mock()
         scanner.scan.side_effect = lambda image: pages[self.page]
         scanner.selected.side_effect = lambda image, card: card.key in self.selected
+        scanner.fingerprint.side_effect = DormFleetScanner.fingerprint
+        scanner.same_ship.side_effect = DormFleetScanner.same_ship
         scroll = Mock(length=100)
         scroll.cal_position.side_effect = lambda main: self.page / max(1, len(pages) - 1)
         self.scanner, self.scroll = scanner, scroll
@@ -248,6 +346,28 @@ class DormSelectionTests(unittest.TestCase):
         self.assertEqual(6, len(self.selected))
         tool.device.drag.assert_called_once()
         tool.device.swipe.assert_not_called()
+
+    def test_confirmed_fifth_ship_is_not_reclicked_after_an_overlapping_scroll_and_marker_miss(self):
+        native = DormFleetScanner()
+        images = [frame('picker_partial_last'), frame('picker_overlap_selected')]
+        pages = [native.scan(image) for image in images]
+        for page, cards in enumerate(pages):
+            for card in cards:
+                card.key = ('fifth' if card.fleet == 1 and card.col == 6 else
+                            'sixth' if card.fleet == 1 and card.col == 0 else f'other:{page}:{card.x}:{card.y}')
+        tool, _ = self.controller(pages, selected=('hidden1', 'hidden2', 'hidden3', 'hidden4'))
+        tool.device.image = images[0]
+        advance = tool.device.drag.side_effect
+        def drag(*args, **kwargs):
+            advance(*args, **kwargs)
+            tool.device.image = images[self.page]
+        tool.device.drag.side_effect = drag
+        self.scanner.selected.side_effect = lambda image, card: (
+            False if self.page == 1 and card.key == 'fifth' else card.key in self.selected)
+        tool._selection(1, 6, 6)
+        self.assertEqual(['fifth', 'sixth'], self.clicks)
+        self.assertEqual(6, len(self.selected))
+        tool.device.drag.assert_called_once()
 
     def test_only_one_held_drag_is_needed_for_the_two_ships_in_the_new_screenshots(self):
         scanner = DormFleetScanner()
