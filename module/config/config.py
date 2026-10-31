@@ -328,6 +328,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         error = []
         now = current_time()
         maintain_start = self.cross_get(keys='Commission.Commission.MaintainStart') - timedelta(minutes=2)
+        comm_run = self.cross_get(keys='Commission.Scheduler.NextRun')
         if AzurLaneConfig.is_hoarding_task:
             now -= self.hoarding
         for func in self.data.values():
@@ -345,6 +346,13 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                         and now > maintain_start - timedelta(minutes=5))
                     ):
                     self.task_delay(target=maintain_start + timedelta(minutes=12), task=func.command)
+                    waiting.append(func)
+                elif ((func.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
+                       and now > comm_run - timedelta(minutes=10))
+                      or (func.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
+                          and now > comm_run - timedelta(minutes=5))
+                      ):
+                    self.task_delay(target=comm_run, task=func.command)
                     waiting.append(func)
                 else:
                     pending.append(func)
