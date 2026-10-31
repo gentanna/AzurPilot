@@ -19,7 +19,7 @@ from module.retire.dock import Dock
 from module.runtime.fleet_formation import VisualDockScanner
 from module.runtime.fleet_rotation import active_fleets
 from module.runtime.fleet_training import ships
-from module.ui.assets import DORM_CHECK
+from module.ui.assets import DORM_CHECK, DORM_INFO
 from module.ui.page import page_dorm, page_main
 from module.ui.scroll import Scroll
 
@@ -77,10 +77,26 @@ class DormFleetScanner(VisualDockScanner):
         region = crop(image, (card.x + 10, card.y + 75, card.x + 130, card.y + 124))
         binary = (region.min(axis=2) > 205).astype(np.uint8) * 255
         template = (TEMPLATE_DORM_SELECTED.image.min(axis=2) > 205).astype(np.uint8) * 255
+        # 轻微平滑字形，容忍滚动后抗锯齿像素变化；不依赖整张立绘颜色。
+        binary = cv2.GaussianBlur(binary, (3, 3), 0)
+        template = cv2.GaussianBlur(template, (3, 3), 0)
         score = cv2.minMaxLoc(cv2.matchTemplate(binary, template, cv2.TM_CCOEFF_NORMED))[1]
-        # 滚动后的失败截图中，原生已选中文字匹配值为0.675，
-        # 同批未选中卡片均低于0.27，仅调整后宅的文字判定。
-        return score >= .65
+        return score >= .7
+
+    @staticmethod
+    def fingerprint(image, card):
+        """截取选中文字与舰队徽标上方的卡面，供同一轮跨滚动核对。"""
+        portrait = crop(image, (card.x + 38, card.y + 30, card.x + 130, card.y + 70))
+        return card.x, cv2.cvtColor(portrait, cv2.COLOR_RGB2GRAY)
+
+    @staticmethod
+    def same_ship(image, card, fingerprint):
+        x, portrait = fingerprint
+        if card.x != x or np.std(portrait) < 5:
+            return False
+        region = crop(image, (card.x + 30, card.y + 23, card.x + 138, card.y + 75))
+        region = cv2.cvtColor(region, cv2.COLOR_RGB2GRAY)
+        return cv2.minMaxLoc(cv2.matchTemplate(region, portrait, cv2.TM_CCOEFF_NORMED))[1] >= .9
 
 
 class FleetRotationDorm(Dock):
@@ -100,14 +116,23 @@ class FleetRotationDorm(Dock):
         """
         tab = DORM_FLEET_TRAIN if floor == 'floor_1' else DORM_FLEET_REST
         click = Timer(3)
+        confirmed = False
         for _ in self.loop(skip_first=False, timeout=30):
+            if self.appear_then_click(DORM_INFO, offset=(30, 30), similarity=.75, interval=3):
+                confirmed = False
+                continue
             if self._panel():
                 if self._floor(floor):
-                    return
+                    if confirmed:
+                        return
+                    confirmed = True
+                    continue
+                confirmed = False
                 if click.reached():
                     self.device.click(tab)
                     click.reset()
                 continue
+            confirmed = False
             if self.appear(DORM_CHECK) and click.reached():
                 self.device.click(DORM_FLEET_ENTER)
                 click.reset()
@@ -120,13 +145,22 @@ class FleetRotationDorm(Dock):
             in: 后宅舰船面板
             out: 后宅选船页
         """
-        click = Timer(3)
+        click, tab_click = Timer(3), Timer(3)
+        tab = DORM_FLEET_TRAIN if floor == 'floor_1' else DORM_FLEET_REST
         for _ in self.loop(skip_first=False, timeout=20):
+            if self.appear_then_click(DORM_INFO, offset=(30, 30), similarity=.75, interval=3):
+                continue
             if self.appear(DOCK_CHECK) and self.appear(DORM_FLEET_CONFIRM, offset=(3, 3)):
                 return
-            if self._panel() and self._floor(floor) and click.reached():
-                self.device.click(DORM_SLOTS.buttons[0])
-                click.reset()
+            if self._panel():
+                # 页面交接后仍按新截图核对页签，不能在训练页只等休息页出现。
+                if self._floor(floor):
+                    if click.reached():
+                        self.device.click(DORM_SLOTS.buttons[0])
+                        click.reset()
+                elif tab_click.reached():
+                    self.device.click(tab)
+                    tab_click.reset()
         raise DormArrangeError('未确认进入后宅选船页')
 
     def _top(self):
@@ -149,6 +183,7 @@ class FleetRotationDorm(Dock):
         scroll = Scroll((1240, 70, 1247, 627), color=(247, 211, 66), name='后宅选船滚动条')
         previous, pending, last_count = None, None, None
         handled = []
+        processed = []
         moved_from = None
         stable = Timer(.3, count=1).start()
         pages = 0
@@ -167,8 +202,9 @@ class FleetRotationDorm(Dock):
                 if total != capacity:
                     raise DormArrangeError('后宅可选栏位数变化，未提交选择')
                 if pending is not None:
-                    expected, card = pending
+                    expected, card, fingerprint = pending
                     if current == expected and scanner.selected(self.device.image, card) == (not clear):
+                        processed.append(fingerprint)
                         pending, previous = None, None
                     else:
                         if change.reached():
@@ -206,11 +242,14 @@ class FleetRotationDorm(Dock):
                                                         if card.fleet == fleet and not chosen]
                 candidates = [card for card in candidates if not any(
                     card.x == done.x and abs(card.y - done.y) < 227 / 2 for done in handled)]
+                candidates = [card for card in candidates if not any(
+                    scanner.same_ship(self.device.image, card, fingerprint) for fingerprint in processed)]
                 if candidates:
                     card = candidates[0]
+                    fingerprint = scanner.fingerprint(self.device.image, card)
                     self.device.click(ButtonGrid(origin=(card.x + 25, card.y + 35), delta=(0, 0),
                         button_shape=(80, 135), grid_shape=(1, 1), name='后宅已选' if clear else '后宅编队').buttons[0])
-                    pending = (current - 1 if clear else current + 1), card
+                    pending = (current - 1 if clear else current + 1), card, fingerprint
                     handled.append(card)
                     change.reset()
                     previous = None
