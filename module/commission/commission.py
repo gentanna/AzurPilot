@@ -2710,8 +2710,10 @@ class RewardCommission(Dock, UI, InfoHandler):
         self.config.get_next_task()
         for task in (self.config.pending_task + self.config.waiting_task):
             if future > self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun'):
-                if ((task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
-                     and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=10)) 
+                if ((task.command in ['OpsiAshBeacon'] 
+                     and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=15))
+                    or (task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
+                        and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=10)) 
                     or (task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
                         and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=5))                
                     ):
