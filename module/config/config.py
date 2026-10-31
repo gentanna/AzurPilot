@@ -347,8 +347,10 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                     ):
                     self.task_delay(target=maintain_start + timedelta(minutes=12), task=func.command)
                     waiting.append(func)
-                elif ((func.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
-                       and now > comm_run - timedelta(minutes=10))
+                elif ((func.command in ['OpsiAshBeacon'] 
+                     and now > comm_run - timedelta(minutes=15)) 
+                      or (func.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 'WarArchives'] 
+                          and now > comm_run - timedelta(minutes=10))
                       or (func.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC'] 
                           and now > comm_run - timedelta(minutes=5))
                       ):
