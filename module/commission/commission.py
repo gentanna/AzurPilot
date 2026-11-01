@@ -836,14 +836,16 @@ class RewardCommission(Dock, UI, InfoHandler):
         Returns:
             bool: 是否成功翻页。滚动条不可见或已到底部时返回 False。
         """
-        if COMMISSION_SCROLL.appear(main=self):
-            if COMMISSION_SCROLL.at_bottom(main=self):
-                return False
+        with self.config.temporary(Emulator_ControlMethod='ADB'):            
+            logger.info('[设备-控制] 控制方案设置为 ADB')
+            if COMMISSION_SCROLL.appear(main=self):
+                if COMMISSION_SCROLL.at_bottom(main=self):
+                    return False
+                else:
+                    COMMISSION_SCROLL.next_page(main=self, page=0.7, random_range=(0,0))
+                    return True
             else:
-                COMMISSION_SCROLL.next_page(main=self)
-                return True
-        else:
-            return False
+                return False
 
     def _commission_swipe_to_top(self):
         """将委托列表滚动到顶部。
