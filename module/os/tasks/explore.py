@@ -135,6 +135,11 @@ class OpsiExplore(OSMap):
                     logger.warning('区域已清除但未完成任何战斗')
                     self._os_explore_failed_zone.append(zone)
             self.handle_after_auto_search()
+            if self.config.OpsiGeneral_ExecuteFixedPatrolScan:
+                leveling_zone = self.config.cross_get(
+                    keys="OpsiHazard1Leveling.OpsiHazard1Leveling.TargetZone", default=0
+                    ) or 22
+                self.globe_goto(leveling_zone)
             self.config.check_task_switch()
 
             # 到达最后一个区域
