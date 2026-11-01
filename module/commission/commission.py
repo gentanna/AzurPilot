@@ -2708,3 +2708,19 @@ class RewardCommission(Dock, UI, InfoHandler):
                     future_excution.sort()
                     future_e = future_excution[0]
                     self.config.task_delay(target=future_e, task=task)
+
+        # 延后出击、活动、META作战、演习、大世界开荒和大世界每日。
+        self.config.get_next_task()
+        for task in (self.config.pending_task + self.config.waiting_task):
+            if future > self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun'):
+                if ((task.command in ['OpsiAshBeacon', 'OpsiDaily'] 
+                     and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=15))
+                    or (task.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 
+                                         'WarArchives', 'CoalitionSp']
+                        and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=10)) 
+                    or (task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC', 
+                                         'Raid', 'RaidScuttle', 'RaidDaily', 'Coalition', 'CoalitionScuttle', 'Hospital',
+                                         'OpsiExplore', 'Exercise'] 
+                        and max(plan_time, self.config.cross_get(keys=f'{task.command}.Scheduler.NextRun')) > future - timedelta(minutes=5))                
+                    ):
+                    self.config.task_delay(target=future, task=task.command)
