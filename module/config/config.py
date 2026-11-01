@@ -328,6 +328,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         error = []
         now = current_time()
         maintain_start = self.cross_get(keys='Commission.Commission.MaintainStart') - timedelta(minutes=2)
+        comm_run = self.cross_get(keys='Commission.Scheduler.NextRun')
         if AzurLaneConfig.is_hoarding_task:
             now -= self.hoarding
         for func in self.data.values():
@@ -348,6 +349,21 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                              and now > maintain_start - timedelta(minutes=5)))
                     ):
                     self.task_delay(target=maintain_start + timedelta(minutes=12), task=func.command)
+                    waiting.append(func)
+                    if func.command == self.task.command:
+                        self.task_stop()
+                elif (self.cross_get(keys='Commission.Scheduler.Enable') 
+                      and ((func.command in ['OpsiAshBeacon', 'OpsiDaily'] 
+                            and now > comm_run - timedelta(minutes=15))
+                           or (func.command in ['Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3', 'EventD', 'EventSp', 
+                                                'WarArchives', 'CoalitionSp'] 
+                               and now > comm_run - timedelta(minutes=10))
+                           or (func.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11', 'Hard', 'EventA', 'EventB', 'EventC', 
+                                                'Raid', 'RaidScuttle', 'RaidDaily', 'Coalition', 'CoalitionScuttle', 'Hospital',
+                                                'OpsiExplore', 'Exercise'] 
+                               and now > comm_run - timedelta(minutes=5)))
+                    ):
+                    self.task_delay(target=comm_run, task=func.command)
                     waiting.append(func)
                     if func.command == self.task.command:
                         self.task_stop()
