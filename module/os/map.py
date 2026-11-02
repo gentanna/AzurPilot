@@ -1101,7 +1101,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 # 退役会中断自动搜索，需要重试
                 self.ash_popup_canceled = True
                 auto_search_time_limit_timer.reset()
-                continue
+                self.config.task_stop()
             if self.combat_appear():
                 self.on_auto_search_battle_count_add()
                 stop_event = self.config.stop_event
