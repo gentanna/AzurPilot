@@ -12,7 +12,7 @@
 """
 import time
 import typing as t
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 
 from module.base.button import ButtonGrid
 from module.base.decorator import Config, cached_property
@@ -963,4 +963,8 @@ class RewardDorm(UI):
         ships = self.get_dorm_ship_amount()
         delay = self.cal_dorm_delay(ships)
         logger.info(f'[宿舍-调度] 宿舍舰船数: {ships}, 任务延迟: {delay}')
-        self.config.task_delay(minute=delay)
+        maintain_start = self.config.cross_get(keys='Commission.Commission.MaintainStart')
+        if current_time() < maintain_start - timedelta(minutes=10) and current_time() + timedelta(minutes=delay + 10) >= maintain_start:
+            self.config.task_delay(target=maintain_start - timedelta(minutes=10))
+        else:
+            self.config.task_delay(minute=delay)
