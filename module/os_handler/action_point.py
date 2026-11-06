@@ -805,21 +805,21 @@ class ActionPointHandler(UI, MapEventHandler):
                     total=self._action_point_total,
                     preserve=self.config.OS_ACTION_POINT_PRESERVE,
                 )
+        # 拥有足够的行动力
+        if self._action_point_current >= cost:
+            logger.info('[大世界-行动力] 行动力充足')
+            self.action_point_quit()
+            return True
 
+        # 防溢出模式下，行动力达到开工线即直接开工，不开启行动力箱。
+        # 80 以上区间不再等待自然恢复，也不会开启 100 箱造成溢出。
+        if avoid_ap_overflow and self._action_point_current >= ACTION_POINT_AVOID_OVERFLOW_START:
+            logger.info('[大世界-行动力] 当前行动力达到80，直接开工不使用能源补给箱')
+            self.action_point_quit()
+            return True
+
+        logger.info('[大世界-行动力] 补充行动力')
         for _ in range(12):
-            # 拥有足够的行动力
-            if self._action_point_current >= cost:
-                logger.info('[大世界-行动力] 行动力充足')
-                self.action_point_quit()
-                return True
-
-            # 防溢出模式下，行动力达到开工线即直接开工，不开启行动力箱。
-            # 80 以上区间不再等待自然恢复，也不会开启 100 箱造成溢出。
-            if avoid_ap_overflow and self._action_point_current >= ACTION_POINT_AVOID_OVERFLOW_START:
-                logger.info('[大世界-行动力] 当前行动力达到80，直接开工不使用能源补给箱')
-                self.action_point_quit()
-                return True
-
             # 购买行动力
             buy_limit = self._action_point_purchase_limit()
             if buy_limit > 0 and buy_checked != buy_limit:
@@ -844,23 +844,26 @@ class ActionPointHandler(UI, MapEventHandler):
             box = []
             overflow_skipped = False
             for index in [3, 2, 1]:
-                if self._action_point_box[index] > 0:
-                    # 防溢出：开箱后行动力达到或超过 200 满值的箱子跳过，
-                    # 等自然恢复（如当前行动力 100 时也不开 100 箱）
-                    if avoid_ap_overflow and self._action_point_current + ACTION_POINT_BOX[index] >= 200:
-                        overflow_skipped = True
-                        continue
-                    if self._action_point_current + ACTION_POINT_BOX[index] >= 200:
-                        box.append(index)
+                if self._action_point_box[index]:     
+                    # 防溢出：开箱后行动力达到或超过 181 的箱子跳过，
+                    # 等自然恢复（如当前行动力 81 时也不开 100 箱）
+                    if avoid_ap_overflow:
+                        if self._action_point_current + ACTION_POINT_BOX[index] >= 181:
+                            overflow_skipped = True
+                        else:
+                            box.append(index)
+                            break
                     else:
-                        box.insert(0, index)
+                        if self._action_point_current + ACTION_POINT_BOX[index] >= 200:
+                            box.append(index)
+                        else:
+                            box.insert(0, index)
 
             # 使用行动力药剂
             if len(box):
                 if self._action_point_total > self.config.OS_ACTION_POINT_PRESERVE:
                     self.action_point_set_button(box[0])
                     self.action_point_use()
-                    continue
                 else:
                     logger.info(f'[大世界-行动力] 达到行动力上限, 保留={self.config.OS_ACTION_POINT_PRESERVE}')
                     self.action_point_quit()
@@ -886,6 +889,16 @@ class ActionPointHandler(UI, MapEventHandler):
                     cost=cost,
                 )
 
+            # 已补足行动力
+            use_box = len([index for index in [1, 2, 3] if self._action_point_box[index] and ACTION_POINT_BOX[index] < 181 - self._action_point_current])
+            if (self._action_point_current >= 181
+                or (avoid_ap_overflow and not use_box) 
+                or (not avoid_ap_overflow and self._action_point_current >= cost) 
+                ):
+                logger.info('[大世界-行动力] 已补足行动力')
+                self.action_point_quit()
+                return True
+             
         logger.warning('[大世界-行动力] 尝试12次后仍无法获取行动力')
         return False
 
