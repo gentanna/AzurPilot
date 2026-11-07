@@ -576,11 +576,12 @@ class RewardCommission(Dock, UI, InfoHandler):
                     duration = max(int(duration_time.total_seconds()), 1)
 
                     # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
-                    # 没有显式倒计时，此时使用本轮实际服务器刷新时刻，不能在服务器刷新前完成的再加 12 个小时。                    
+                    # 没有显式倒计时，能在服务器刷新前完成的设置为本轮实际服务器刷新时刻再减运行时间，
+                    # 不能的设置为本轮实际服务器刷新时刻再加 12 个小时。                    
                     deadline_time = getattr(comm, 'deadline_time', None)
                     if not deadline_time:
                         if duration_time < daily_refresh_time - timedelta(minutes=2) - plan_time:
-                            deadline_time = daily_refresh_time
+                            deadline_time = daily_refresh_time - timedelta(minutes=2) - duration_time
                         else:
                             deadline_time = daily_refresh_time + timedelta(hours=12)
                     deadline = int((deadline_time - plan_time).total_seconds())
