@@ -494,7 +494,7 @@ class Combat(Combat_, MapEventHandler):
                 return True
         return False
 
-    def handle_auto_search_exp_info(self):
+    def handle_auto_search_exp_info(self, click=True):
         """
         自动搜索模式下的经验结算页面处理。
 
@@ -502,17 +502,25 @@ class Combat(Combat_, MapEventHandler):
         点击沿用战斗结算的点击冷却，避免同一页面被连点；页面是否关闭由调用方
         继续截图确认，不再用固定时长休眠猜测界面状态。
 
+        Args:
+            click (bool, optional): 是否点击经验结算按钮。默认为 True
+
         Pages:
             in: 经验结算页面（S/A/B/C/D 任一可见）
             out: 经验结算页面已关闭
 
         Returns:
-            bool: 是否点击了经验结算按钮。
+            bool: 是否出现了经验结算按钮。
         """
         for exp_info_button in [EXP_INFO_S, EXP_INFO_A, EXP_INFO_B, EXP_INFO_C, EXP_INFO_D]:
-            if self.appear_then_click(exp_info_button, interval=self.battle_status_click_interval):
-                self._clear_battle_status_s_timer()
-                return True
+            if click:
+                if self.appear_then_click(exp_info_button, interval=self.battle_status_click_interval):
+                    self._clear_battle_status_s_timer()
+                    return True
+            else:
+                if self.appear(exp_info_button, interval=self.battle_status_click_interval):
+                    self._clear_battle_status_s_timer()
+                    return True
         return False
 
     def auto_search_combat(self, drop=None):
@@ -534,12 +542,12 @@ class Combat(Combat_, MapEventHandler):
             bool: 敌人是否已清除，舰队阵亡则返回 False。
 
         Raises:
-            GameBugError: CL1 指标模式下战斗超过 5 分钟超时。
+            GameBugError: CL1 指标模式下战斗超过 1 分钟超时。
         """
         # 保持战斗专注于状态转换；指标层决定此任务是否应产生 CL1/short-meow 计时样本。
         battle_timer_source = start_battle_timer(self.config)
         
-        cl1_combat_timer = Timer(300, count=300)
+        cl1_combat_timer = Timer(60, count=60)
         
         logger.info('[大世界战斗] 自动搜索战斗加载中')
         self.device.stuck_record_clear()
@@ -576,12 +584,13 @@ class Combat(Combat_, MapEventHandler):
 
         success = True
         battle_status_s_timer = Timer(self.battle_status_s_autoclick_delay)
+        exp_info_timer = Timer(self.battle_status_s_autoclick_delay).start()
         while 1:
             self.device.screenshot()
 
             self.handle_background_coin_interrupt(drop=drop)
             if battle_timer_source == 'cl1' and cl1_combat_timer.reached():
-                logger.warning('[大世界战斗] CL1 战斗超时（5 分钟限制）')
+                logger.warning('[大世界战斗] CL1 战斗超时（1 分钟限制）')
                 raise GameBugError('CL1 combat timeout')
 
             if self.handle_submarine_call(submarine_mode):
@@ -601,7 +610,7 @@ class Combat(Combat_, MapEventHandler):
                 continue
             # 自律被游戏或任务中断后，经验结算页需要主动确认才能回到地图，
             # 与是否启用自动修理无关；此前按修理阈值门控会在关闭修理时卡在结算页。
-            if self.handle_auto_search_exp_info():
+            if self.handle_auto_search_exp_info(click=exp_info_timer.reached()):
                 battle_status_s_timer.clear()
                 success = None
                 continue
