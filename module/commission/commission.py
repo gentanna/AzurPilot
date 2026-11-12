@@ -2143,7 +2143,7 @@ class RewardCommission(Dock, UI, InfoHandler):
                                 if self._commission_reward_images:
                                     income_recorded = self._record_commission_income() and income_recorded
                                     self._commission_reward_images = []
-                            else:
+                            elif self.config.DropRecord_CommissionIncomeScreenshot == 'save':
                                 self._commission_reward_images.append(self.device.image.copy())
                                 logger.info(f'[委托-收入] 收集奖励截图 (触发按钮={button.name})')
 
