@@ -10,6 +10,7 @@ from module.base.timer import Timer
 from module.combat.assets import *
 from module.exception import CampaignEnd, GameTooManyClickError
 from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM, STORY_SKIP_3
+from module.os.config import opsi_drop_record
 from module.logger import logger
 from module.os.assets import GLOBE_GOTO_MAP
 from module.os_handler.assets import *
@@ -300,10 +301,14 @@ class MapEventHandler(EnemySearchingHandler):
         cleared = False
         for _ in self.loop():
             if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50), interval=2):
-                if drop:
+                if opsi_drop_record(self.config) == 'do_not_use':
+                    if self.info_bar_count():
+                        # 关闭截图保存后放弃截图直接确认奖励。
+                        cleared = True
+                elif drop:
                     if self.ensure_no_info_bar():
                         cleared = True
-                    drop.handle_add(main=self, before=4)
+                    drop.handle_add(main=self, before=4)                   
                 elif self.info_bar_count():
                     # 不记录掉落时只检查当前截图中的清除提示，直接确认奖励。
                     cleared = True
