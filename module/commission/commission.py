@@ -2147,7 +2147,7 @@ class RewardCommission(Dock, UI, InfoHandler):
                                 if self._commission_reward_images:
                                     income_recorded = self._record_commission_income() and income_recorded
                                     self._commission_reward_images = []
-                            else:
+                            elif self.config.DropRecord_CommissionIncomeScreenshot == 'save':
                                 self._commission_reward_images.append(self.device.image.copy())
                                 logger.info(f'[委托-收入] 收集奖励截图 (触发按钮={button.name})')
 
@@ -2202,7 +2202,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         finally:
             self._handle_research_genre_t_update(completed_commission_count)
 
-        if reward:
+        if reward and self.config.DropRecord_CommissionIncomeScreenshot == 'save':
             income_recorded = self._record_commission_income() and income_recorded
 
         if not income_recorded:
@@ -2649,8 +2649,9 @@ class RewardCommission(Dock, UI, InfoHandler):
                         future_finish = sorted([f for f in total.get('finish_time') if f is not None])
                         if len(future_finish):
                             index = 0
+                            inteval = 10 if self.config.DropRecord_CommissionIncomeScreenshot == 'save' else 7
                             for i in range(1,len(future_finish)):
-                                if future_finish[i] - future_finish[index] <= timedelta(seconds=(10 if index == 0 else 0) + (i - index) * 10):
+                                if future_finish[i] - future_finish[index] <= timedelta(seconds=(10 if index == 0 else 0) + (i - index) * inteval):
                                     index = i
                             future = future_finish[index] - timedelta(seconds=30)
                             future_second = 3 * (future.time().second // 3)
