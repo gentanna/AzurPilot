@@ -36,11 +36,12 @@ OPSI_DROP_GENRE_PREFIX = 'opsi_'
 OPSI_DROP_GENRE_EXCLUDE = frozenset({'opsi_hazard1_leveling'})
 
 
-def is_opsi_drop_genre(genre) -> bool:
+def is_opsi_drop_genre(genre, save) -> bool:
     """判断某个掉落分类是否属于要解析的大世界任务。
 
     Args:
         genre (str): 掉落记录的分类标识，取自当前任务名（如 'opsi_abyssal'）。
+        save (bool): 是否将图像保存至磁盘。默认为 False。
 
     Returns:
         bool: 是否需要解析入库。
@@ -48,7 +49,7 @@ def is_opsi_drop_genre(genre) -> bool:
     genre = str(genre or '')
     if not genre.startswith(OPSI_DROP_GENRE_PREFIX):
         return False
-    return genre not in OPSI_DROP_GENRE_EXCLUDE
+    return save
 
 
 class DropImage:
@@ -812,8 +813,7 @@ class AzurStats:
             method_value = str(method)
             save = save or method_value in ('save', 'save_and_upload')
         if local is None:
-            # 截图保存策略与本地统计独立；侵蚀1收益继续由大世界总结记录。
-            local = is_opsi_drop_genre(genre)
+            local = is_opsi_drop_genre(genre, save)
         # “不上传”仅关闭云端提交，科研领奖仍需解析到本地统计。
         analyze = genre == 'research'
         upload = (getattr(self.config, 'DropRecord_CloudUpload', False) is True
