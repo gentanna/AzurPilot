@@ -1627,6 +1627,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         with self.stat.new(
             genre=inflection.underscore(self.config.task.command),
             method=opsi_drop_record(self.config),
+            local=(opsi_drop_record(self.config)=='save'),
         ) as drop:
             while 1:
                 combat = self.os_auto_search_run(drop, interrupt=interrupt)
