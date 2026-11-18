@@ -2407,15 +2407,10 @@
     },
     "CommissionLimit": {
       "name": "Prevent too many urgent commissions",
-      "help": "When enabled, commission scheduling reserves high-value commissions according to the following settings and delays urgent-commission farming when the reserve threshold is reached."
-    },
-    "HighValueCommissionFilterCount": {
-      "name": "High-value commission filter count",
-      "help": "Treat the first X regular rules in the active commission filter as high-value rules. Control markers such as tier and shortest are not counted."
-    },
-    "HighValueCommissionReserve": {
-      "name": "High-value commission reserve",
-      "help": "After starting commissions, delay urgent-commission farming when the number of pending commissions matching high-value rules reaches this value."
+      "help": "In simple mode, urgent-commission farming are delayed when high-value commissions reach the reserve threshold\nIn advanced mode, the execution time of urgent-commission farming is intelligently set based on commissions completion time, high-value commissions gaps, and the average refresh time of high-value urgent-commissions.",
+      "do_not_use": "Not used",
+      "legacy": "Simple",
+      "advanced": "Advanced"
     },
     "VanguardLevelMin": {
       "name": "Vanguard minimum level",
@@ -2650,6 +2645,18 @@
     "CustomFilter": {
       "name": "Custom commission filter",
       "help": "Set Commission Filter to Customize to use this filter. With experimental dynamic programming enabled, tier separates value levels; without tier, every rule becomes its own level. The planner discounts finite tier and in-tier values by expected start delay and may drop low-value commissions. The traditional greedy strategy ignores tier; shortest fills unmatched slots."
+    },
+    "HighValueCommissionFilterCount": {
+      "name": "High-value commission filter count",
+      "help": "Treat the first X regular rules in the active commission filter as high-value rules. Control markers such as tier and shortest are not counted."
+    },
+    "HighValueCommissionReserve": {
+      "name": "High-value commission reserve",
+      "help": "After starting commissions, delay urgent-commission farming when the number of pending commissions matching high-value rules reaches this value."
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "Average refresh time for High-value commissions (minutes)",
+      "help": "The average time for urgent-commission farming to refresh a high-value urgent-commission."
     },
     "Blacklist": {
       "name": "Commission blacklist",
