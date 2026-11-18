@@ -2743,13 +2743,15 @@ class RewardCommission(Dock, UI, InfoHandler):
                     schedule = [3.00, 4.75, 6.30, 7.76, 9.16]
                     future_excution = []
                     for i in range(len(future_finish)):
-                        if i - high_value_count >= 0:
-                            future_excution.append(future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time))
+                        if plan_time > maintenace_start_time + timedelta(minutes=10) or future_finish[i] < maintenace_start_time - timedelta(hours=2):
+                            if i - high_value_count >= 0:
+                                future_excution.append(future_finish[i] - timedelta(minutes=schedule[i - high_value_count] * refresh_time))
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
+                        extra_count = -len([f for f in future_finish if plan_time <= maintenace_start_time and f >= maintenace_start_time])
                         logger.info(
-                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish)}，"
+                            f"[委托-调度] 高价值委托达到保留量 {high_value_count}/{len(future_finish) + extra_count}，"
                             f"延迟任务 '{task}'"
                         )
                     future_excution.append(future)
