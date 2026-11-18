@@ -985,11 +985,9 @@ GemsFarming:
   AllowHighFlagshipLevel: false
   AllowLowVanguardLevel: false
   DelayTaskIFNoFlagship: false
-  CommissionLimit: false
-  HighValueCommissionFilterCount:
-    type: input
-    value: 32
-  HighValueCommissionReserve: 2
+  CommissionLimit:
+    value: do_not_use
+    option: [do_not_use, legacy, advanced]
   VanguardLevelMin:
     value: 1
     validate: [1, 125]
@@ -1108,6 +1106,11 @@ Commission:
     > UrgentDrill-1 > UrgentDrill-1:30 > UrgentDrill-1:10
     > Extra-0:20 > Extra-0:30 > Extra-1:00 > Extra-1:30 > Extra-2:00
     > shortest
+  HighValueCommissionFilterCount:
+    type: input
+    value: 32
+  HighValueCommissionReserve: 2
+  HighValueCommissionAverageRefreshTime: 20
   Blacklist:
     type: textarea
     value: ""

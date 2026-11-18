@@ -2407,15 +2407,10 @@
     },
     "CommissionLimit": {
       "name": "防止緊急委託數量過多",
-      "help": "啟用後，委託排程會根據以下兩項設定保留高價值委託；達到保留量時延後刷緊急委託任務。"
-    },
-    "HighValueCommissionFilterCount": {
-      "name": "高價值委託過濾器數量",
-      "help": "將目前委託過濾器由前往後的前 X 條普通規則視為高價值規則。tier 和 shortest 等控制標記不計入數量。"
-    },
-    "HighValueCommissionReserve": {
-      "name": "高價值委託保留量",
-      "help": "委託執行後，若仍待執行且符合高價值規則的委託數量達到此值，則延後刷緊急委託任務。"
+      "help": "簡單模式在高價值委託達到保留量時延後刷緊急委託任務/n高級模式依據委託完成時間、高價值委託缺口和高價值緊急委託平均刷新時間智能設置緊急委託任務執行時間。",
+      "do_not_use": "不使用",
+      "legacy": "簡單模式",
+      "advanced": "高級模式"
     },
     "VanguardLevelMin": {
       "name": "前排最低等級",
@@ -2650,6 +2645,18 @@
     "CustomFilter": {
       "name": "自定義委託過濾器",
       "help": "使用自訂篩選器需將委託篩選器設為自訂。開啟實驗性動態規劃後，可用 tier 分隔價值層級；未填寫 tier 時，每條篩選規則分別視為一個層級。規劃器按有限層級倍率、層內編號和預計啟動等待時間計算折現價值，必要時會放棄低價值委託。傳統貪心策略會忽略 tier；shortest 用於補足未匹配委託。"
+    },
+    "HighValueCommissionFilterCount": {
+      "name": "高價值委託過濾器數量",
+      "help": "將目前委託過濾器由前往後的前 X 條普通規則視為高價值規則。tier 和 shortest 等控制標記不計入數量。"
+    },
+    "HighValueCommissionReserve": {
+      "name": "高價值委託保留量",
+      "help": "委託執行後，若仍待執行且符合高價值規則的委託數量達到此值，則延後刷緊急委託任務。"
+    },
+    "HighValueCommissionAverageRefreshTime": {
+      "name": "高價值委託平均刷新時間（分鐘）",
+      "help": "緊急委託任務刷新一個高價值緊急委託的平均時間。"
     },
     "Blacklist": {
       "name": "委託黑名單",
