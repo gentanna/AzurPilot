@@ -586,43 +586,60 @@ class RewardCommission(Dock, UI, InfoHandler):
             if maintenace_start >= maintenace_end or maintenace_start + 600 <= 0 or maintenace_start - 120 >= horizon:
                 maintenace_end = 0
 
+            high_value_count = 0
+            mode = 'Commission'
+            if self.config.Maintenace_SwitchFilter:
+                if (maintenace_end_time > maintenace_start_time
+                    and plan_time > maintenace_start_time - timedelta(hours=6)
+                    and plan_time < maintenace_start_time + timedelta(minutes=10)
+                    ):
+                    mode = 'Maintenace'
+            filter_count = getattr(self.config, f'{mode}_HighValueCommissionFilterCount')                
+            filter_count = max(int(filter_count), 1)                
+            high_value = len(self._commission_high_value(filter_count, total))
+            if maintenace_end and plan_time.date() == maintenace_start_time.date() == maintenace_end_time.date():
+                quantity_demanded = max(high_value_count, 24 - high_value_count)
+            else:
+                quantity_demanded = max(high_value_count, 16 - high_value_count)
+
             jobs = []
             source_index = 0            
             for tier_index, tier in enumerate(tiers):
-                for filter_index, comm in tier:                                        
-                    duration_time = getattr(comm, 'duration', None)
-                    duration = max(int(duration_time.total_seconds()), 1)
+                for filter_index, comm in tier:      
+                    if source_index < quantity_demanded:
+                        duration_time = getattr(comm, 'duration', None)
+                        duration = max(int(duration_time.total_seconds()), 1)
+    
+                        # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
+                        # 没有显式倒计时，能在服务器刷新前完成的设置为本轮实际服务器刷新时刻再减运行时间，
+                        # 不能的设置为本轮实际服务器刷新时刻再加 12 个小时。                    
+                        deadline_time = getattr(comm, 'deadline_time', None)
+                        if not deadline_time:
+                            if duration_time < daily_refresh_time - timedelta(minutes=2) - plan_time:
+                                deadline_time = daily_refresh_time - timedelta(minutes=2) - duration_time
+                            else:
+                                deadline_time = daily_refresh_time + timedelta(hours=12)
+                        deadline = int((deadline_time - plan_time).total_seconds())
+                        if deadline <= 0:
+                            logger.info(f'[委托-规划] 忽略已过期委托: {comm}')
+                            continue
+                        # 在维护前，对于维护时段内截止的委托，如其时长超过 3 小时，
+                        # 则将其截止时间改为维护结束时间再减 10 分钟，否则将其截止时间改为维护开始时间再加 10 分钟
+                        if maintenace_end and maintenace_start - 120 <= deadline < maintenace_end:
+                            if duration >= 10800:
+                                deadline = maintenace_end - 600
+                            else:
+                                deadline = maintenace_start + 600                    
 
-                    # 规划层只接受统一的有限截止时间。源数据的 None 仅表示游戏
-                    # 没有显式倒计时，能在服务器刷新前完成的设置为本轮实际服务器刷新时刻再减运行时间，
-                    # 不能的设置为本轮实际服务器刷新时刻再加 12 个小时。                    
-                    deadline_time = getattr(comm, 'deadline_time', None)
-                    if not deadline_time:
-                        if duration_time < daily_refresh_time - timedelta(minutes=2) - plan_time:
-                            deadline_time = daily_refresh_time - timedelta(minutes=2) - duration_time
-                        else:
-                            deadline_time = daily_refresh_time + timedelta(hours=12)
-                    deadline = int((deadline_time - plan_time).total_seconds())
-                    if deadline <= 0:
-                        logger.info(f'[委托-规划] 忽略已过期委托: {comm}')
-                        continue
-                    # 在维护前，对于维护时段内截止的委托，如其时长超过 3 小时，
-                    # 则将其截止时间改为维护结束时间再减 10 分钟，否则将其截止时间改为维护开始时间再加 10 分钟
-                    if maintenace_end and maintenace_start - 120 <= deadline < maintenace_end:
-                        if duration >= 10800:
-                            deadline = maintenace_end - 600
-                        else:
-                            deadline = maintenace_start + 600                    
-
-                    jobs.append(CommissionPlanJob(
-                        source_index=source_index,
-                        tier=tier_index,
-                        duration=duration,
-                        deadline=deadline,
-                        commission=comm,
-                        filter_index=filter_index,
-                    ))
-                    source_index += 1
+                        jobs.append(CommissionPlanJob(
+                            source_index=source_index,
+                            tier=tier_index,
+                            duration=duration,
+                            deadline=deadline,
+                            commission=comm,
+                            filter_index=filter_index,
+                        ))
+                        source_index += 1
 
             slot_available = []
             for comm in running_list:
