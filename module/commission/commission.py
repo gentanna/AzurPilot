@@ -2713,7 +2713,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         ]
         future_p = future
 
-        if limit_tasks:
+        if limit_tasks:            
             mode = 'Commission'
             maintenace_start_time = self.config.Maintenace_MaintenaceStart
             maintenace_end_time = self.config.Maintenace_MaintenaceEnd
@@ -2726,8 +2726,16 @@ class RewardCommission(Dock, UI, InfoHandler):
             filter_count = getattr(self.config, f'{mode}_HighValueCommissionFilterCount')                
             filter_count = max(int(filter_count), 1)                
             high_value = self._commission_high_value(filter_count, total)
+            if (plan_time < maintenace_start_time < maintenace_end_time 
+                and plan_time.date() == maintenace_start_time.date() == maintenace_end_time.date()
+                ):
+                ignore_daily = True
+                high_value = [comm for comm in high_value if not comm.is_daily_commission]
+                daily_refresh_count = 0
+            else:
+                ignore_daily = False
+                daily_refresh_count = max(0, 10 - self.config.Commission_DailyCommissionFinishCount - len([comm for comm in high_value if comm.is_daily_commission]))
             high_value_count = len(high_value)
-            daily_refresh_count = max(0, 10 - self.config.Commission_DailyCommissionFinishCount - len([comm for comm in high_value if comm.is_daily_commission]))
             reserve = getattr(self.config, f'{mode}_HighValueCommissionReserve')                 
             reserve = max(int(reserve), 1)
             refresh_time = getattr(self.config, f'{mode}_HighValueCommissionAverageRefreshTime') 
@@ -2761,7 +2769,12 @@ class RewardCommission(Dock, UI, InfoHandler):
                     future_excution = []
                     for i in range(len(future_predict)):
                         if plan_time > maintenace_start_time + timedelta(minutes=10) or future_predict[i] < maintenace_start_time - timedelta(hours=2):
-                            forecast_refresh_count = daily_refresh_count if future_predict[i].date() == plan_time.date() else 10
+                            forecast_refresh_count = daily_refresh_count 
+                            if (future_predict[i].date() > plan_time.date() 
+                                and not (plan_time < maintenace_start_time < maintenace_end_time 
+                                         and (plan_time + timedelta(days=1)).date() == maintenace_start_time.date() == maintenace_end_time.date())
+                                ):
+                                forecast_refresh_count = 10
                             if i - high_value_count - forecast_refresh_count >= 0:
                                 future_t = future_predict[i] - timedelta(minutes=schedule[i - high_value_count - forecast_refresh_count] * refresh_time - 20)
                                 if future_t.date() == future_predict[i].date():
@@ -2770,7 +2783,11 @@ class RewardCommission(Dock, UI, InfoHandler):
                     if len(future_excution):
                         logger.info(f'[委托-调度] {task}执行时间: {[str(f) for f in future_excution]}')
                     else:
-                        forecast_refresh_count = daily_refresh_count + len([f for f in future_predict if f.date() > plan_time.date()])
+                        forecast_refresh_count = daily_refresh_count
+                        if not ((plan_time < maintenace_start_time < maintenace_end_time 
+                                 and (plan_time + timedelta(days=1)).date() == maintenace_start_time.date() == maintenace_end_time.date())
+                                ):
+                            forecast_refresh_count += len([f for f in future_predict if f.date() > plan_time.date()])
                         extra_count = -len([f for f in future_finish if plan_time <= maintenace_start_time and f >= maintenace_start_time])
                         logger.info(
                             f"[委托-调度] 高价值委托达到保留量 {high_value_count + forecast_refresh_count}/{len(future_predict) + extra_count}，"
