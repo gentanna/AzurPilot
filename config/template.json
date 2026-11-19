@@ -2177,6 +2177,8 @@
       "HighValueCommissionReserve": 2,
       "HighValueCommissionAverageRefreshTime": 20,
       "DailyCommissionFinishCount": 0,
+      "GemCommissionFinishCount": 0,
+      "GemCommissionAverageRefreshTime": 80,
       "Blacklist": null,
       "DoMajorCommission": false,
       "CommissionNotifyReward": false,

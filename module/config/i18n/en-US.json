@@ -2662,6 +2662,14 @@
       "name": "Daily commission completion volume (reset after the last commission execution of the day)",
       "help": ""
     },
+    "GemCommissionFinishCount": {
+      "name": "Gem Commission Completion Volume (Resets After the Last Commission of the Day Is Executed)",
+      "help": ""
+    },
+    "GemCommissionAverageRefreshTime": {
+      "name": "Average refresh time for Gem commissions (minutes)",
+      "help": ""
+    },
     "Blacklist": {
       "name": "Commission blacklist",
       "help": "Enter commission filter rules to ignore, separated by half-width commas (,), for example: ExtraBook, UrgentOil-8, Major. The blacklist applies to both the traditional greedy strategy and the planner."
