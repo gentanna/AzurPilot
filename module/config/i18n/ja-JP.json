@@ -2662,6 +2662,14 @@
       "name": "毎日の委託完了量（毎日最後の委託実行後にリセットされます）",
       "help": ""
     },
+    "GemCommissionFinishCount": {
+      "name": "ダイヤモンド委託完了量（毎日の最後の委託実行後にリセットされます）",
+      "help": ""
+    },
+    "GemCommissionAverageRefreshTime": {
+      "name": "ダイヤモンド委託の平均リフレッシュ時間（分）",
+      "help": ""
+    },
     "Blacklist": {
       "name": "委託ブラックリスト",
       "help": "無視する委託フィルタールールを半角コンマ（,）区切りで入力します。例：ExtraBook, UrgentOil-8, Major。従来の貪欲選択とプランナーの両方に適用されます。"
