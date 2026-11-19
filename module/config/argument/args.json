@@ -12018,6 +12018,14 @@
         "type": "input",
         "value": 0
       },
+      "GemCommissionFinishCount": {
+        "type": "input",
+        "value": 0
+      },
+      "GemCommissionAverageRefreshTime": {
+        "type": "input",
+        "value": 80
+      },
       "Blacklist": {
         "type": "textarea",
         "value": ""

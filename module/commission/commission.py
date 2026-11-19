@@ -1760,6 +1760,7 @@ class RewardCommission(Dock, UI, InfoHandler):
                 if self._commission_find_and_start(comm, is_urgent=True):
                     comm.convert_to_running()                    
                     if comm.is_gem_commission:
+                        setattr(self.config, 'Commission_GemCommissionFinishCount', self.config.Commission_GemCommissionFinishCount + 1)
                         try:
                             from module.statistics.cl1_database import db as cl1_db
                             cl1_db.add_running_gem_commission(
@@ -2724,8 +2725,10 @@ class RewardCommission(Dock, UI, InfoHandler):
             filter_count = getattr(self.config, f'{mode}_HighValueCommissionFilterCount')                
             filter_count = max(int(filter_count), 1)                
             high_value = self._commission_high_value(filter_count, total)
-            if (plan_time < maintenace_start_time < maintenace_end_time 
-                and plan_time.date() == maintenace_start_time.date() == maintenace_end_time.date()
+            gem_refresh_count = max(0, 7 - self.config.Commission_GemCommissionFinishCount - len([comm for comm in high_value if comm.is_gem_commission]))
+            if ((plan_time < maintenace_start_time < maintenace_end_time 
+                and plan_time.date() == maintenace_start_time.date() == maintenace_end_time.date())
+                or gem_refresh_count
                 ):
                 ignore_daily = True
                 high_value = [comm for comm in high_value if not comm.is_daily_commission]
@@ -2793,10 +2796,25 @@ class RewardCommission(Dock, UI, InfoHandler):
                         )
                     future_excution.append(future)
                     future_excution.sort()
-                    future_e = future_excution[0]
+                    future_e = max(future_excution[0], plan_time)
+                    if gem_refresh_count:
+                        if (plan_time < maintenace_start_time < maintenace_end_time and plan_time.date() == maintenace_start_time.date()):
+                            if (future_e + timedelta(minutes=schedule[gem_refresh_count - 1] * max(1, self.config.Commission_GemCommissionAverageRefreshTime))
+                                + (maintenace_end_time - maintenace_start_time)).date() > plan_time.date():
+                                logger.info(
+                                    f"[委托-调度] 今日钻石委托还有{gem_refresh_count}个配额,"
+                                    f"继续任务 '{task}'"
+                                )
+                                future_e = plan_time
+                        elif (future_e + timedelta(minutes=schedule[gem_refresh_count - 1] * max(1, self.config.Commission_GemCommissionAverageRefreshTime))
+                              ).date() > plan_time.date():
+                            logger.info(
+                                f"[委托-调度] 今日钻石委托还有{gem_refresh_count}个配额,"
+                                f"继续任务 '{task}'"
+                            )
+                            future_e = plan_time                    
                     self.config.task_delay(target=future_e, task=task)
-                    # 提前委托执行以避免紧急委托刷新过多         
-                    future_e = max(future_e, plan_time)                        
+                    # 提前委托执行以避免紧急委托刷新过多                              
                     if future_e.time().hour < 21 and future > future_e.replace(hour=21, minute=0, second=0, microsecond=0) + timedelta(minutes=refresh_time):
                         logger.info("[委托-调度] 夜间委托即将刷新，提前任务 'commission'")
                         future_p = min(future_p, future_e.replace(hour=21, minute=0, second=0))
@@ -2807,8 +2825,8 @@ class RewardCommission(Dock, UI, InfoHandler):
         # 延后委托
         self.config.task_delay(target=future_p)
         if future_p.date() > plan_time.date():
-            setattr(self.config, 'Commission_DailyCommissionFinishCount', -len([comm for comm in high_value if comm.is_daily_commission]))
-
+            setattr(self.config, 'Commission_DailyCommissionFinishCount', -len([comm for comm in total if comm.is_daily_commission and comm.status == 'pending']))
+            setattr(self.config, 'Commission_GemCommissionFinishCount', -len([comm for comm in high_value if comm.is_gem_commission]))
         # 延后出击任务、活动任务、META作战、演习、大世界开荒和大世界每日。
         self.config.get_next_task()
         for task in (self.config.pending_task + self.config.waiting_task):

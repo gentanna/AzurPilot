@@ -501,6 +501,8 @@ class GeneratedConfig:
     Commission_HighValueCommissionReserve = 2
     Commission_HighValueCommissionAverageRefreshTime = 20    
     Commission_DailyCommissionFinishCount = 0
+    Commission_GemCommissionFinishCount = 0
+    Commission_GemCommissionAverageRefreshTime = 80   
     Commission_Blacklist = None
     Commission_DoMajorCommission = False
     Commission_CommissionNotifyReward = False
