@@ -190,7 +190,6 @@ class OSStatus(UI):
             'OpsiObscure',
             'OpsiAbyssal',
             'OpsiStronghold',
-            'OpsiDaily',
         ]
 
         def func(task: Function):
