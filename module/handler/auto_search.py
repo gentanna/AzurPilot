@@ -261,15 +261,14 @@ class AutoSearchHandler(EnemySearchingHandler):
         Returns:
             bool: 是否执行了退出操作。
         """
-        if self.appear(AUTO_SEARCH_MENU_EXIT, offset=self._auto_search_menu_offset, interval=2):
+        if self.appear(AUTO_SEARCH_MENU_EXIT, offset=self._auto_search_menu_offset):
             # 此处实现较粗糙
             if drop:
                 drop.handle_add(main=self, before=4)
             self.device.click(AUTO_SEARCH_MENU_EXIT)
             self.interval_reset(AUTO_SEARCH_MENU_EXIT)
             return True
-        else:
-            return False
+        return False
 
     def ensure_auto_search_exit(self, skip_first_screenshot=True):
         """确保退出自动搜索菜单。
