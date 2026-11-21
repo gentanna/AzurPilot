@@ -524,19 +524,27 @@ class FastForwardHandler(AutoSearchHandler):
         Returns:
             bool: 是否执行了继续操作。
         """
-        if self.appear(MULTIPLE_SORTIES_RESULT_CHECK, offset=(20, 20)):
-            return self.appear_then_click(MULTIPLE_SORTIES_RESULT_EXIT, offset=(20, 20), interval=2)
-        if self.appear(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset, interval=2):
-            self.map_is_2x_book = self.config.Campaign_Use2xBook
-            self.handle_2x_book_setting(mode='auto')
-            if drop:
-                drop.handle_add(main=self, before=4)
-            if self.appear_then_click(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset):
-                self.interval_reset(AUTO_SEARCH_MENU_CONTINUE)
-            else:
-                # handle_2x_book_setting() 之后 AUTO_SEARCH_MENU_CONTINUE 可能已消失
-                pass
-            return True
+        # 提高紧急委托结算速度
+        if self.config.task.command in ['GemsFarming', 'ThreeOilLowCost', 'Ambush11']:
+            if self.appear(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset):
+                if drop:
+                    drop.handle_add(main=self, before=4)
+                self.device.click(AUTO_SEARCH_MENU_CONTINUE)
+                return True
+        else:
+            if self.appear(MULTIPLE_SORTIES_RESULT_CHECK, offset=(20, 20)):
+                return self.appear_then_click(MULTIPLE_SORTIES_RESULT_EXIT, offset=(20, 20), interval=2)
+            if self.appear(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset, interval=2):
+                self.map_is_2x_book = self.config.Campaign_Use2xBook
+                self.handle_2x_book_setting(mode='auto')
+                if drop:
+                    drop.handle_add(main=self, before=4)
+                if self.appear_then_click(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset):
+                    self.interval_reset(AUTO_SEARCH_MENU_CONTINUE)
+                else:
+                    # handle_2x_book_setting() 之后 AUTO_SEARCH_MENU_CONTINUE 可能已消失
+                    pass
+                return True
         return False
 
     def get_map_clear_percentage(self):
