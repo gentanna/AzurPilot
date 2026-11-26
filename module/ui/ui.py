@@ -169,11 +169,16 @@ class UI(InfoHandler):
         click_timer = Timer(retry_wait, count=retry_wait // 0.5)
         confirm_wait = confirm_wait if additional is not None else 0
         confirm_timer = Timer(confirm_wait, count=confirm_wait // 0.5).start()
+        timeout = Timer(60, 10).start()
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
+
+            if timeout.reached():
+                from module.exception import GameStuckError
+                raise GameStuckError
 
             if self.ui_process_check_button(check_button, offset=offset):
                 if confirm_timer.reached():
